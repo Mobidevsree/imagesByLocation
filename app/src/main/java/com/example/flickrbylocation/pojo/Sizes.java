@@ -1,5 +1,7 @@
 package com.example.flickrbylocation.pojo;
 
+import java.util.List;
+
 public class Sizes {
     private String canblog;
     private String canprint;
