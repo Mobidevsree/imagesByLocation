@@ -9,7 +9,7 @@ public class Photos {
     private String total;
     private String stat;
 
-    public class Photo {
+    public static class Photo {
         private String id;
         private String secret;
         private String server;

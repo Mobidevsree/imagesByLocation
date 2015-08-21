@@ -1,28 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    >
-    <TextView
-        android:layout_width="fill_parent"
+    android:orientation="vertical">
+
+    <GridView
+        android:id="@+id/imageGridView"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello"
-        />
-    <EditText
-        android:id="@+id/searchtext"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        />
-    <Button
-        android:id="@+id/searchbutton"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:text="Search"
-        />
-    <TextView
-        android:id="@+id/queryresult"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        />
+        android:gravity="center"
+        android:numColumns="auto_fit"
+        android:stretchMode="columnWidth" />
 </LinearLayout>
+

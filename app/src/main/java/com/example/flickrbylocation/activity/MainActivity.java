@@ -1,27 +1,26 @@
 package com.example.flickrbylocation.activity;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
+import android.util.TypedValue;
+import android.widget.GridView;
 
 import com.example.flickrbylocation.R;
+import com.example.flickrbylocation.URL.FlickrURL;
+import com.example.flickrbylocation.constants.Constants;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -31,103 +30,112 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends Activity implements LocationListener{
-    String FlickrQuery_url = "http://api.flickr.com/services/rest/?method=flickr.photos.search";
-    String FlickrQuery_per_page = "&per_page=1";
-    String FlickrQuery_nojsoncallback = "&nojsoncallback=1";
-    String FlickrQuery_format = "&format=json";
-    String FlickrQuery_tag = "&tags=";
-    String FlickrQuery_key = "&api_key=";
 
+    private double currentLatitude,currentLongitude;
+    private int roundedLatitude,roundedLongitude;
+    private GridView imageGridView;
     protected LocationManager locationManager;
     protected LocationListener locationListener;
-    String FlickrApiKey = "39873e146da21b2b19d9c273e58a7323";
-    EditText searchText;
-    Button searchButton;
-    TextView textQueryResult, textJsonResult;
+    private Context context;
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        searchText = (EditText)findViewById(R.id.searchtext);
-        searchButton = (Button)findViewById(R.id.searchbutton);
-        textQueryResult = (TextView)findViewById(R.id.queryresult);
-        //textJsonResult = (TextView)findViewById(R.id.jsonresult);
-        searchButton.setOnClickListener(searchButtonOnClickListener);
+        context=this;
 
-
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        verifyConnectivitySettings();
+        verifyLocationSettings();
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
 
-    }
-    private Button.OnClickListener searchButtonOnClickListener
-            = new Button.OnClickListener(){
-        public void onClick(View arg0) {
-            String searchQ = searchText.getText().toString();
-            String searchResult = QueryFlickr(searchQ);
-            textQueryResult.setText(searchResult);
-            String jsonResult = ParseJSON(searchResult);
-            //Log.v("JSON Response", jsonResult);
-            //textJsonResult.setText(jsonResult);
+        imageGridView=(GridView)findViewById(R.id.imageGridView);
+        float spacing = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                Constants.GRIDVIEW_SPACING, getResources().getDisplayMetrics());
+        imageGridView.setNumColumns(5);
+        //imageGridView.setNumColumns(getDeviceUtil.getDeviceDimensions(MainActivity.this).x / Constants.GRIDVIEW_COLUMN_WIDTH);
+        imageGridView.setPadding((int) spacing, (int) spacing, (int) spacing, (int) spacing);
+        imageGridView.setVerticalSpacing((int) spacing);
+        imageGridView.setHorizontalSpacing((int) spacing);
 
-        }};
-    private String QueryFlickr(String q) {
+        new RetrieveImage().execute();
 
-        String qResult="Done";
-        new RetrieveImage().execute(q);
-        //new done
-        return qResult;
     }
 
-    private String ParseJSON(String json){
+    private void verifyConnectivitySettings() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
 
-        String jResult = null;
+        if(!(activeNetworkInfo!=null && activeNetworkInfo.isConnected()))
+        {
+            AlertDialog.Builder dialog = new AlertDialog.Builder(context);
+            dialog.setMessage(context.getResources().getString(R.string.network_not_enabled));
+            dialog.setPositiveButton(context.getResources().getString(R.string.enable), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                    startActivity(new Intent(Settings.ACTION_SETTINGS));
+                    finish();
+                }
+            });
+            dialog.setNegativeButton(context.getString(R.string.cancel), new DialogInterface.OnClickListener() {
+
+                @Override
+                public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                    finish();
+                }
+            });
+            dialog.show();
+        }
+    }
+
+    private void verifyLocationSettings()
+    {
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        boolean gps_enabled = false;
+        boolean network_enabled = false;
+
         try {
+            gps_enabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            network_enabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch(Exception ex) {}
 
-            JSONObject JsonObject = new JSONObject(json);
-            JSONObject Json_photos = JsonObject.getJSONObject("photos");
-            JSONArray JsonArray_photo = Json_photos.getJSONArray("photo");
-            //We have only one photo in this exercise
-            JSONObject FlickrPhoto = JsonArray_photo.getJSONObject(0);
-            jResult = "\nid: " + FlickrPhoto.getString("id") + "\n"
 
-                    + "owner: " + FlickrPhoto.getString("owner") + "\n"
-                    + "secret: " + FlickrPhoto.getString("secret") + "\n"
-                    + "server: " + FlickrPhoto.getString("server") + "\n"
-                    + "farm: " + FlickrPhoto.getString("farm") + "\n"
-                    + "title: " + FlickrPhoto.getString("title") + "\n";
-        } catch (JSONException e) {
-            e.printStackTrace();
+        if(!gps_enabled && !network_enabled) {
+            // notify user
+            AlertDialog.Builder dialog = new AlertDialog.Builder(context);
+            dialog.setMessage(context.getResources().getString(R.string.gps_not_enabled));
+            dialog.setPositiveButton(context.getResources().getString(R.string.enable), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                    Intent myIntent = new Intent( Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                    context.startActivity(myIntent);
+                }
+            });
+            dialog.setNegativeButton(context.getString(R.string.cancel), new DialogInterface.OnClickListener() {
 
+                @Override
+                public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                   finish();
+                }
+            });
+            dialog.show();
         }
-        return jResult;
-    }
-
-    private String convertInputStreamToString(InputStream inputStream) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader( new InputStreamReader(inputStream));
-        String line = "";
-        String result = "";
-        while((line = bufferedReader.readLine()) != null){
-            result += line;
-        }
-
-            /* Close Stream */
-        if(null!=inputStream){
-            inputStream.close();
-        }
-        return result;
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        textQueryResult.setText("Latitude:" + location.getLatitude() + ", Longitude:" + location.getLongitude());
+        currentLatitude=location.getLatitude();
+        currentLongitude=location.getLongitude();
+        roundedLatitude=(int) Math.round(currentLatitude);
+        roundedLongitude=(int) Math.round(currentLongitude);
     }
 
     @Override
@@ -145,45 +153,39 @@ public class MainActivity extends Activity implements LocationListener{
         Log.d("Latitude","disable");
     }
 
+
+
     class RetrieveImage extends AsyncTask<String,String,String>
     {
-
         @Override
         protected String doInBackground(String... params) {
 
-            String qResult = null;
-            //String qString =FlickrQuery_url + FlickrQuery_per_page+ FlickrQuery_nojsoncallback+ FlickrQuery_format+ FlickrQuery_tag + params[0] + FlickrQuery_key + FlickrApiKey;
-            //URL url = new URL("http://api.flickr.com/services/rest/?method=flickr.photos.search&text=" + searchPattern + "&api_key=" + FLICKRAPIKEY + "&per_page="+ limit + "&format=json");
-
-            //String qString="http://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=39873e146da21b2b19d9c273e58a7323&tags=london&format=json&per_page=1&media=photos";
-            try {
+            String response="";
+             try {
                 //String urlString = "https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=39873e146da21b2b19d9c273e58a7323&tags=london&format=json&per_page=1&media=photos";
-                String urlString = "https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=39873e146da21b2b19d9c273e58a7323&lat=25.817&lon=-80.353&format=json&media=photos";
-                URL url = new URL(urlString);
-                URLConnection connection = null;
-                connection = url.openConnection();
-
+                //String urlString = "https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=39873e146da21b2b19d9c273e58a7323&lat=25.817&lon=-80.353&format=json&media=photos";
+                 String urlString="";
+                 //Search Photos
+                 urlString=String.format(FlickrURL.flickr_search_getPhotos,Constants.API_KEY,25.81,-80.51);
+                 //urlString=String.format(FlickrURL.flickr_search_getPhotos,Constants.API_KEY,roundedLatitude,roundedLongitude);
+                 URL url = new URL(urlString);
+                URLConnection connection = url.openConnection();
                 HttpURLConnection httpConn = (HttpURLConnection) connection;
-                // connection.connect();
 
                 int responseCode = httpConn.getResponseCode();
                 InputStream inputStream = new BufferedInputStream(httpConn.getInputStream());
-                String response = convertInputStreamToString(inputStream);
-
-
-                qResult = response;
-
-
-                String jResult = null;
+                //response = convertInputStreamToString(inputStream);
 
                 try {
-                    JSONObject root = new JSONObject(qResult.replace("jsonFlickrApi(", "").replace(")", ""));
+                    JSONObject root = new JSONObject(response.replace("jsonFlickrApi(", "").replace(")", ""));
                     JSONObject photos = root.getJSONObject("photos");
                     JSONArray imageJSONArray = photos.getJSONArray("photo");
-                    for (int i = 0; i < imageJSONArray.length(); i++) {
+                    List<JSONObject> searchedPhotos=new ArrayList<>();
+                    //for (int i = 0; i < imageJSONArray.length(); i++) {
+                    for (int i = 0; i < 5; i++) {
                         JSONObject item = imageJSONArray.getJSONObject(i);
-
-
+                       // Photos.Photo photo= new Photos.Photo();
+                        searchedPhotos.add(item);
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -194,7 +196,7 @@ public class MainActivity extends Activity implements LocationListener{
             } catch (IOException e) {
                 e.printStackTrace();
             }
-                return qResult;
+                return response;
         }
     }
 }
