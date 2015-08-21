@@ -1,4 +1,4 @@
-package com.example.flickrbylocation.URL;
+package com.example.flickrbylocation.request;
 
 public class FlickrURL {
     public static final String flickr_photosets_getPhotos = "https://www.flickr.com/services/rest/?method=flickr.photosets.getPhotos&format=%s&api_key=%s&photoset_id=%s";

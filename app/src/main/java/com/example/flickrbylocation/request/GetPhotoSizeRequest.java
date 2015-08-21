@@ -7,10 +7,12 @@ import com.octo.android.robospice.request.SpiceRequest;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class GetPhotosRequest extends SpiceRequest<String> {
+public class GetPhotoSizeRequest extends SpiceRequest<String> {
 
-    public GetPhotosRequest() {
+    private String photoId;
+    public GetPhotoSizeRequest(String photoId) {
         super(String.class);
+        this.photoId=photoId;
     }
 
     @Override
@@ -18,7 +20,7 @@ public class GetPhotosRequest extends SpiceRequest<String> {
 
         String result=null;
 
-        String url=String.format(FlickrURL.flickr_search_getPhotos, Constants.API_KEY,25,-80);
+        String url=String.format(FlickrURL.flickr_photos_getSizes, Constants.API_KEY,photoId);
 
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 

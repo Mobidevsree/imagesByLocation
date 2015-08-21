@@ -5,6 +5,8 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -18,22 +20,27 @@ import android.util.TypedValue;
 import android.widget.GridView;
 
 import com.example.flickrbylocation.R;
-import com.example.flickrbylocation.URL.FlickrURL;
-import com.example.flickrbylocation.constants.Constants;
+import com.example.flickrbylocation.pojo.ImageDetails;
+import com.example.flickrbylocation.pojo.ResponsePhotoSizes;
+import com.example.flickrbylocation.pojo.ResponsePhotos;
+import com.example.flickrbylocation.request.CachedSpiceService;
+import com.example.flickrbylocation.request.FlickrURL;
+import com.example.flickrbylocation.request.GetPhotoSizeRequest;
+import com.example.flickrbylocation.request.GetPhotosRequest;
+import com.example.flickrbylocation.utility.Constants;
+import com.example.flickrbylocation.utility.Utility;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.octo.android.robospice.SpiceManager;
+import com.octo.android.robospice.persistence.exception.SpiceException;
+import com.octo.android.robospice.request.SpiceRequest;
+import com.octo.android.robospice.request.listener.RequestListener;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.apache.http.NameValuePair;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,10 +48,14 @@ public class MainActivity extends Activity implements LocationListener{
 
     private double currentLatitude,currentLongitude;
     private int roundedLatitude,roundedLongitude;
+    private String thumbnailURL, mediumURL, currentPhotoId, currentPhotoTitle;
     private GridView imageGridView;
     protected LocationManager locationManager;
     protected LocationListener locationListener;
     private Context context;
+    List<ImageDetails> imageDetailsList = new ArrayList<>();
+    private ResponsePhotos photosResponse;
+    protected SpiceManager spiceManager = new SpiceManager(CachedSpiceService.class);
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -53,7 +64,8 @@ public class MainActivity extends Activity implements LocationListener{
         context=this;
 
         verifyConnectivitySettings();
-        verifyLocationSettings();
+        //verifyLocationSettings();
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
 
         imageGridView=(GridView)findViewById(R.id.imageGridView);
@@ -65,7 +77,10 @@ public class MainActivity extends Activity implements LocationListener{
         imageGridView.setVerticalSpacing((int) spacing);
         imageGridView.setHorizontalSpacing((int) spacing);
 
-        new RetrieveImage().execute();
+        //new RetrieveImage().execute();
+        performGetPhotosRequest();
+
+        Log.d("Downloaded images", String.valueOf(imageDetailsList.size()));
 
     }
 
@@ -145,17 +160,198 @@ public class MainActivity extends Activity implements LocationListener{
 
     @Override
     public void onProviderEnabled(String provider) {
-        Log.d("Latitude","enable");
+        Log.d("Latitude", "enable");
     }
 
     @Override
     public void onProviderDisabled(String provider) {
-        Log.d("Latitude","disable");
+        Log.d("Latitude", "disable");
+    }
+    @Override
+    protected void onStart() {
+        super.onStart();
+        spiceManager.start(this);
     }
 
+    @Override
+    protected void onStop() {
+        spiceManager.shouldStop();
+        super.onStop();
+    }
+    private void performGetPhotosRequest() {
+        GetPhotosRequest request = new GetPhotosRequest();
+        request.setPriority(SpiceRequest.PRIORITY_HIGH);
+        spiceManager.execute(request, new GetPhotosListener());
+    }
 
+    private class GetPhotosListener implements RequestListener<String> {
+        @Override
+        public void onRequestFailure(SpiceException spiceException) {
 
-    class RetrieveImage extends AsyncTask<String,String,String>
+        }
+
+        @Override
+        public void onRequestSuccess(String result)  {
+            if (result == null) {
+                return;
+            }
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+            try {
+                result=result.replace("jsonFlickrApi(", "").replace(")", "");
+                photosResponse = mapper.readValue(result, ResponsePhotos.class);
+                int numberOfPhotos= photosResponse.getReceivedPhoto().getPhotos().size();
+                for(int i=0;i<numberOfPhotos;i++)
+                {
+                    currentPhotoTitle=photosResponse.getReceivedPhoto().getPhotos().get(i).getTitle();
+                    currentPhotoId=photosResponse.getReceivedPhoto().getPhotos().get(i).getId();
+                    performGetPhotoSizeRequest(currentPhotoId);
+                   // new RetrieveImageSize().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    private void performGetPhotoSizeRequest(String photoId) {
+        GetPhotoSizeRequest request = new GetPhotoSizeRequest(photoId);
+        request.setPriority(SpiceRequest.PRIORITY_NORMAL);
+        spiceManager.execute(request, new GetPhotoSizeListener());
+    }
+
+    private class GetPhotoSizeListener implements RequestListener<String> {
+        @Override
+        public void onRequestFailure(SpiceException spiceException) {
+        }
+
+        @Override
+        public void onRequestSuccess(String result)  {
+            if (result == null) {
+                return;
+            }
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+            try {
+                result=result.replace("jsonFlickrApi(", "").replace(")", "");
+                ResponsePhotoSizes photoSizeResponse = mapper.readValue(result, ResponsePhotoSizes.class);
+                List<ResponsePhotoSizes.Sizes.Size> photoSizes=photoSizeResponse.getReceivedPhotoSize().getSizes();
+
+                for (int x = 0; x < photoSizes.size(); x++) {
+                    if (photoSizes.get(x).getLabel().equals(Constants.IMAGE_THUMBNAIL))
+                        thumbnailURL = photoSizes.get(x).getSource();
+                    if (photoSizes.get(x).getLabel().equals(Constants.IMAGE_MEDIUM))
+                        mediumURL = photoSizes.get(x).getSource();
+
+                    InputStream inputStreamThumbnail = null, inputStreamMedium = null;
+                    inputStreamThumbnail = new URL(thumbnailURL).openStream();
+                    inputStreamMedium = new URL(mediumURL).openStream();
+                    Bitmap bitmapThumbnail = BitmapFactory.decodeStream(inputStreamThumbnail);
+                    Bitmap bitmapMedium = BitmapFactory.decodeStream(inputStreamMedium);
+
+                    imageDetailsList.add(new ImageDetails(currentPhotoId, currentPhotoTitle, bitmapThumbnail, bitmapMedium));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    class RetrieveImageSize extends AsyncTask<Void,Void,Void> {
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            try{
+                String result = "";
+
+                int numberOfPhotos = photosResponse.getReceivedPhoto().getPhotos().size();
+                for (int i = 0; i < numberOfPhotos; i++) {
+                    currentPhotoTitle = photosResponse.getReceivedPhoto().getPhotos().get(i).getTitle();
+                    currentPhotoId = photosResponse.getReceivedPhoto().getPhotos().get(i).getId();
+
+                    String url = String.format(FlickrURL.flickr_photos_getSizes, Constants.API_KEY, currentPhotoId);
+
+                    HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                    int statusCode = connection.getResponseCode();
+                    if (statusCode == HttpURLConnection.HTTP_OK) { // 200
+                        result = Utility.convertInputStreamToString(connection.getInputStream());
+                    }
+                    connection.disconnect();
+
+                    result = result.replace("jsonFlickrApi(", "").replace(")", "");
+                    ResponsePhotoSizes photoSizeResponse = new ObjectMapper().readValue(result, ResponsePhotoSizes.class);
+                    List<ResponsePhotoSizes.Sizes.Size> photoSizes = photoSizeResponse.getReceivedPhotoSize().getSizes();
+
+                    for (int x = 0; x < photoSizes.size(); x++) {
+                        if (photoSizes.get(x).getLabel().equals(Constants.IMAGE_THUMBNAIL))
+                            thumbnailURL = photoSizes.get(x).getSource();
+                        if (photoSizes.get(x).getLabel().equals(Constants.IMAGE_MEDIUM))
+                            mediumURL = photoSizes.get(x).getSource();
+
+                        InputStream inputStreamThumbnail = null, inputStreamMedium = null;
+                        inputStreamThumbnail = new URL(thumbnailURL).openStream();
+                        inputStreamMedium = new URL(mediumURL).openStream();
+                        Bitmap bitmapThumbnail = BitmapFactory.decodeStream(inputStreamThumbnail);
+                        Bitmap bitmapMedium = BitmapFactory.decodeStream(inputStreamMedium);
+
+                        imageDetailsList.add(new ImageDetails(currentPhotoId, currentPhotoTitle, bitmapThumbnail, bitmapMedium));
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                e.printStackTrace();
+            }
+            return null;
+        }
+    }
+
+   /* class RetrieveImageSize implements Runnable {
+        @Override
+        public void run() {
+            try{
+            String result = "";
+
+            int numberOfPhotos = photosResponse.getReceivedPhoto().getPhotos().size();
+            for (int i = 0; i < numberOfPhotos; i++) {
+                currentPhotoTitle = photosResponse.getReceivedPhoto().getPhotos().get(i).getTitle();
+                currentPhotoId = photosResponse.getReceivedPhoto().getPhotos().get(i).getId();
+
+                String url = String.format(FlickrURL.flickr_photos_getSizes, Constants.API_KEY, currentPhotoId);
+
+                HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                int statusCode = connection.getResponseCode();
+                if (statusCode == HttpURLConnection.HTTP_OK) { // 200
+                    result = Utility.convertInputStreamToString(connection.getInputStream());
+                }
+                connection.disconnect();
+
+                result = result.replace("jsonFlickrApi(", "").replace(")", "");
+                ResponsePhotoSizes photoSizeResponse = new ObjectMapper().readValue(result, ResponsePhotoSizes.class);
+                List<ResponsePhotoSizes.Sizes.Size> photoSizes = photoSizeResponse.getReceivedPhotoSize().getSizes();
+
+                for (int x = 0; x < photoSizes.size(); x++) {
+                    if (photoSizes.get(x).getLabel().equals(Constants.IMAGE_THUMBNAIL))
+                        thumbnailURL = photoSizes.get(x).getSource();
+                    if (photoSizes.get(x).getLabel().equals(Constants.IMAGE_MEDIUM))
+                        mediumURL = photoSizes.get(x).getSource();
+
+                    InputStream inputStreamThumbnail = null, inputStreamMedium = null;
+                    inputStreamThumbnail = new URL(thumbnailURL).openStream();
+                    inputStreamMedium = new URL(mediumURL).openStream();
+                    Bitmap bitmapThumbnail = BitmapFactory.decodeStream(inputStreamThumbnail);
+                    Bitmap bitmapMedium = BitmapFactory.decodeStream(inputStreamMedium);
+
+                    imageDetailsList.add(new ImageDetails(currentPhotoId, currentPhotoTitle, bitmapThumbnail, bitmapMedium));
+                }
+                }
+            }
+            catch(Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }*/
+
+    /*class RetrieveImage extends AsyncTask<String,String,String>
     {
         @Override
         protected String doInBackground(String... params) {
@@ -174,12 +370,13 @@ public class MainActivity extends Activity implements LocationListener{
 
                 int responseCode = httpConn.getResponseCode();
                 InputStream inputStream = new BufferedInputStream(httpConn.getInputStream());
-                //response = convertInputStreamToString(inputStream);
+                response = Utility.convertInputStreamToString(inputStream);
 
-                try {
+                    ObjectMapper mapper=new ObjectMapper();
+                    ResponsePhotos photosResponse = mapper.readValue(response, ResponsePhotos.class);
                     JSONObject root = new JSONObject(response.replace("jsonFlickrApi(", "").replace(")", ""));
-                    JSONObject photos = root.getJSONObject("photos");
-                    JSONArray imageJSONArray = photos.getJSONArray("photo");
+                    JSONObject photo = root.getJSONObject("photos");
+                    JSONArray imageJSONArray = photo.getJSONArray("photo");
                     List<JSONObject> searchedPhotos=new ArrayList<>();
                     //for (int i = 0; i < imageJSONArray.length(); i++) {
                     for (int i = 0; i < 5; i++) {
@@ -187,16 +384,12 @@ public class MainActivity extends Activity implements LocationListener{
                        // Photos.Photo photo= new Photos.Photo();
                         searchedPhotos.add(item);
                     }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+
             }
-                catch (MalformedURLException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
+                 catch (Exception e) {
                 e.printStackTrace();
             }
-                return response;
+            return response;
         }
-    }
+    }*/
 }
