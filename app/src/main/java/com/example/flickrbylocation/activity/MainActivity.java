@@ -38,7 +38,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements LocationListener{
 
     private String thumbnailURL, mediumURL, currentPhotoId, currentPhotoTitle;
     private GridView imageGridView;
@@ -49,6 +49,12 @@ public class MainActivity extends Activity {
     private ResponsePhotos photosResponse;
     private ImageGridViewAdapter imageGridViewAdapter;
 
+    private double currentDeviceLatitude,currentDeviceLongitude;
+    boolean isGPSEnabled = false;
+    boolean isNetworkEnabled = false;
+    boolean canGetLocation = false;
+    Location location;
+
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -57,7 +63,7 @@ public class MainActivity extends Activity {
         context=this;
 
         verifyConnectivitySettings();
-        //verifyLocationSettings();
+        getCurrentLocation();
 
         imageGridView=(GridView)findViewById(R.id.imageGridView);
         float spacing = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
@@ -67,12 +73,6 @@ public class MainActivity extends Activity {
         imageGridView.setPadding((int) spacing, (int) spacing, (int) spacing, (int) spacing);
         imageGridView.setVerticalSpacing((int) spacing);
         imageGridView.setHorizontalSpacing((int) spacing);
-
-        CurrentDeviceLocation deviceLocation=new CurrentDeviceLocation(context);
-        String latitude=deviceLocation.getCurrentDeviceLatitude();
-        String longitude=deviceLocation.getCurrentDeviceLongitude();
-        String accuracy=deviceLocation.getCurrentDeviceAccuracy();
-        new ImageSearchTask().execute();
     }
 
     private void verifyConnectivitySettings() {
@@ -101,39 +101,99 @@ public class MainActivity extends Activity {
             dialog.show();
         }
     }
-
-    private void verifyLocationSettings()
+    @Override
+    public void onResume()
     {
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        boolean gps_enabled = false;
-        boolean network_enabled = false;
+        //getCurrentLocation();
+        super.onResume();
+    }
 
+    private void getCurrentLocation()
+    {
         try {
-            gps_enabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-            network_enabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-        } catch(Exception ex) {}
+            locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+            // getting GPS status
+            isGPSEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            // getting network status
+            isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
 
+            if (!isGPSEnabled && !isNetworkEnabled) {
+                // no network provider is enabled
+                // notify user
+                final AlertDialog.Builder dialog = new AlertDialog.Builder(context);
+                dialog.setMessage(context.getResources().getString(R.string.gps_not_enabled));
+                dialog.setPositiveButton(context.getResources().getString(R.string.enable), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                        Intent myIntent = new Intent( Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                        startActivity(myIntent);
+                        finish();
+                        paramDialogInterface.dismiss();
+                    }
+                });
+                dialog.setNegativeButton(context.getString(R.string.cancel), new DialogInterface.OnClickListener() {
 
-        if(!gps_enabled && !network_enabled) {
-            // notify user
-            AlertDialog.Builder dialog = new AlertDialog.Builder(context);
-            dialog.setMessage(context.getResources().getString(R.string.gps_not_enabled));
-            dialog.setPositiveButton(context.getResources().getString(R.string.enable), new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-                    Intent myIntent = new Intent( Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                    context.startActivity(myIntent);
+                    @Override
+                    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                        finish();
+                    }
+                });
+                dialog.show();
+            }
+            else {
+                this.canGetLocation = true;
+                // First get location from Network Provider
+                if (isNetworkEnabled) {
+                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,0 ,0, this);
+                    if (locationManager != null) {
+                        location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                        if (location != null) {
+                            currentDeviceLatitude = location.getLatitude();
+                            currentDeviceLongitude = location.getLongitude();
+                            new ImageSearchTask().execute(String.valueOf(currentDeviceLatitude),String.valueOf(currentDeviceLongitude));
+                        }
+                    }
                 }
-            });
-            dialog.setNegativeButton(context.getString(R.string.cancel), new DialogInterface.OnClickListener() {
-
-                @Override
-                public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-                   finish();
+                // if GPS Enabled get lat/long using GPS Services
+                if (isGPSEnabled) {
+                    if (location == null) {
+                        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+                        if (locationManager != null) {
+                            location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                            if (location != null) {
+                                currentDeviceLatitude = location.getLatitude();
+                                currentDeviceLongitude = location.getLongitude();
+                                new ImageSearchTask().execute(String.valueOf(currentDeviceLatitude),String.valueOf(currentDeviceLongitude));
+                            }
+                        }
+                    }
                 }
-            });
-            dialog.show();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+       // getCurrentLocation();
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        //getCurrentLocation();
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+        //getCurrentLocation();
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
     }
 
     class ImageSearchTask extends AsyncTask<String,Integer,ResponsePhotos> {
@@ -151,7 +211,7 @@ public class MainActivity extends Activity {
         protected ResponsePhotos doInBackground(String... params) {
             try {
                 String photosResult = "",url = "";
-                url = String.format(FlickrURL.flickr_search_getPhotos, Constants.API_KEY, 25, -80);
+                url = String.format(FlickrURL.flickr_search_getPhotos, Constants.API_KEY, params[0], params[1]);
                 HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 
                 int statusCode = connection.getResponseCode();
@@ -174,7 +234,8 @@ public class MainActivity extends Activity {
         protected void onPostExecute(ResponsePhotos photosResponse) {
             progressDialog.dismiss();
             numberOfPhotosSearched=photosResponse.getReceivedPhoto().getPhotos().size();
-            for (int i = 0; i < photosResponse.getReceivedPhoto().getPhotos().size(); i++) {
+            //numberOfPhotosSearched= 100;
+            for (int i = 0; i < numberOfPhotosSearched; i++) {
                 currentPhotoId = photosResponse.getReceivedPhoto().getPhotos().get(i).getId();
                 currentPhotoTitle = photosResponse.getReceivedPhoto().getPhotos().get(i).getTitle();
                 new ImageFetchTask().execute(currentPhotoId,currentPhotoTitle);
