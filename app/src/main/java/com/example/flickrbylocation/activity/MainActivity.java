@@ -2,6 +2,7 @@ package com.example.flickrbylocation.activity;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -77,10 +78,8 @@ public class MainActivity extends Activity implements LocationListener{
         imageGridView.setVerticalSpacing((int) spacing);
         imageGridView.setHorizontalSpacing((int) spacing);
 
-        //new RetrieveImage().execute();
-        performGetPhotosRequest();
+        new ImageSearchTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 
-        Log.d("Downloaded images", String.valueOf(imageDetailsList.size()));
 
     }
 
@@ -155,7 +154,7 @@ public class MainActivity extends Activity implements LocationListener{
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
-        Log.d("Latitude","status");
+        Log.d("Latitude", "status");
     }
 
     @Override
@@ -167,229 +166,114 @@ public class MainActivity extends Activity implements LocationListener{
     public void onProviderDisabled(String provider) {
         Log.d("Latitude", "disable");
     }
-    @Override
-    protected void onStart() {
-        super.onStart();
-        spiceManager.start(this);
-    }
 
-    @Override
-    protected void onStop() {
-        spiceManager.shouldStop();
-        super.onStop();
-    }
-    private void performGetPhotosRequest() {
-        GetPhotosRequest request = new GetPhotosRequest();
-        request.setPriority(SpiceRequest.PRIORITY_HIGH);
-        spiceManager.execute(request, new GetPhotosListener());
-    }
+    class ImageSearchTask extends AsyncTask<String,Integer,ResponsePhotos> {
+        private ProgressDialog progressDialog;
 
-    private class GetPhotosListener implements RequestListener<String> {
         @Override
-        public void onRequestFailure(SpiceException spiceException) {
-
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(MainActivity.this);
+            progressDialog.setMessage("Downloading Photos from Flickr. Please wait...");
+            progressDialog.show();
         }
 
         @Override
-        public void onRequestSuccess(String result)  {
-            if (result == null) {
-                return;
-            }
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        protected ResponsePhotos doInBackground(String... params) {
             try {
-                result=result.replace("jsonFlickrApi(", "").replace(")", "");
-                photosResponse = mapper.readValue(result, ResponsePhotos.class);
-                int numberOfPhotos= photosResponse.getReceivedPhoto().getPhotos().size();
-                for(int i=0;i<numberOfPhotos;i++)
-                {
-                    currentPhotoTitle=photosResponse.getReceivedPhoto().getPhotos().get(i).getTitle();
-                    currentPhotoId=photosResponse.getReceivedPhoto().getPhotos().get(i).getId();
-                    performGetPhotoSizeRequest(currentPhotoId);
-                   // new RetrieveImageSize().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
+                String photosResult = "",url = "";
+                url = String.format(FlickrURL.flickr_search_getPhotos, Constants.API_KEY, 25, -80);
+                HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+
+                int statusCode = connection.getResponseCode();
+                if (statusCode == HttpURLConnection.HTTP_OK) {
+                    photosResult = Utility.convertInputStreamToString(connection.getInputStream());
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-    private void performGetPhotoSizeRequest(String photoId) {
-        GetPhotoSizeRequest request = new GetPhotoSizeRequest(photoId);
-        request.setPriority(SpiceRequest.PRIORITY_NORMAL);
-        spiceManager.execute(request, new GetPhotoSizeListener());
-    }
+                connection.disconnect();
 
-    private class GetPhotoSizeListener implements RequestListener<String> {
-        @Override
-        public void onRequestFailure(SpiceException spiceException) {
-        }
-
-        @Override
-        public void onRequestSuccess(String result)  {
-            if (result == null) {
-                return;
-            }
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-            try {
-                result=result.replace("jsonFlickrApi(", "").replace(")", "");
-                ResponsePhotoSizes photoSizeResponse = mapper.readValue(result, ResponsePhotoSizes.class);
-                List<ResponsePhotoSizes.Sizes.Size> photoSizes=photoSizeResponse.getReceivedPhotoSize().getSizes();
-
-                for (int x = 0; x < photoSizes.size(); x++) {
-                    if (photoSizes.get(x).getLabel().equals(Constants.IMAGE_THUMBNAIL))
-                        thumbnailURL = photoSizes.get(x).getSource();
-                    if (photoSizes.get(x).getLabel().equals(Constants.IMAGE_MEDIUM))
-                        mediumURL = photoSizes.get(x).getSource();
-
-                    InputStream inputStreamThumbnail = null, inputStreamMedium = null;
-                    inputStreamThumbnail = new URL(thumbnailURL).openStream();
-                    inputStreamMedium = new URL(mediumURL).openStream();
-                    Bitmap bitmapThumbnail = BitmapFactory.decodeStream(inputStreamThumbnail);
-                    Bitmap bitmapMedium = BitmapFactory.decodeStream(inputStreamMedium);
-
-                    imageDetailsList.add(new ImageDetails(currentPhotoId, currentPhotoTitle, bitmapThumbnail, bitmapMedium));
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-    class RetrieveImageSize extends AsyncTask<Void,Void,Void> {
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            try{
-                String result = "";
-
+                photosResult = photosResult.replace("jsonFlickrApi(", "").replace(")", "");
+                photosResponse = new ObjectMapper().readValue(photosResult, ResponsePhotos.class);
                 int numberOfPhotos = photosResponse.getReceivedPhoto().getPhotos().size();
                 for (int i = 0; i < numberOfPhotos; i++) {
                     currentPhotoTitle = photosResponse.getReceivedPhoto().getPhotos().get(i).getTitle();
                     currentPhotoId = photosResponse.getReceivedPhoto().getPhotos().get(i).getId();
 
-                    String url = String.format(FlickrURL.flickr_photos_getSizes, Constants.API_KEY, currentPhotoId);
-
-                    HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-                    int statusCode = connection.getResponseCode();
-                    if (statusCode == HttpURLConnection.HTTP_OK) { // 200
-                        result = Utility.convertInputStreamToString(connection.getInputStream());
-                    }
-                    connection.disconnect();
-
-                    result = result.replace("jsonFlickrApi(", "").replace(")", "");
-                    ResponsePhotoSizes photoSizeResponse = new ObjectMapper().readValue(result, ResponsePhotoSizes.class);
-                    List<ResponsePhotoSizes.Sizes.Size> photoSizes = photoSizeResponse.getReceivedPhotoSize().getSizes();
-
-                    for (int x = 0; x < photoSizes.size(); x++) {
-                        if (photoSizes.get(x).getLabel().equals(Constants.IMAGE_THUMBNAIL))
-                            thumbnailURL = photoSizes.get(x).getSource();
-                        if (photoSizes.get(x).getLabel().equals(Constants.IMAGE_MEDIUM))
-                            mediumURL = photoSizes.get(x).getSource();
-
-                        InputStream inputStreamThumbnail = null, inputStreamMedium = null;
-                        inputStreamThumbnail = new URL(thumbnailURL).openStream();
-                        inputStreamMedium = new URL(mediumURL).openStream();
-                        Bitmap bitmapThumbnail = BitmapFactory.decodeStream(inputStreamThumbnail);
-                        Bitmap bitmapMedium = BitmapFactory.decodeStream(inputStreamMedium);
-
-                        imageDetailsList.add(new ImageDetails(currentPhotoId, currentPhotoTitle, bitmapThumbnail, bitmapMedium));
-                    }
+                    //new ImageFetchTask().execute(currentPhotoId);
                 }
             }
             catch(Exception e)
             {
                 e.printStackTrace();
             }
-            return null;
+
+            return photosResponse;
+        }
+        @Override
+        protected void onPostExecute(ResponsePhotos s) {
+            progressDialog.dismiss();
+            super.onPostExecute(s);
         }
     }
+    class ImageFetchTask extends AsyncTask<String,Integer,List<ImageDetails>> {
+        private ProgressDialog progressDialog;
 
-   /* class RetrieveImageSize implements Runnable {
         @Override
-        public void run() {
-            try{
-            String result = "";
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(MainActivity.this);
+            progressDialog.setMessage("Downloading Photos from Flickr. Please wait...");
+            progressDialog.show();
+        }
 
-            int numberOfPhotos = photosResponse.getReceivedPhoto().getPhotos().size();
-            for (int i = 0; i < numberOfPhotos; i++) {
-                currentPhotoTitle = photosResponse.getReceivedPhoto().getPhotos().get(i).getTitle();
-                currentPhotoId = photosResponse.getReceivedPhoto().getPhotos().get(i).getId();
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            super.onProgressUpdate(values);
+            progressDialog.setMessage(String.format("Downloading photos from Flickr %s/%s. Please wait...", values[0], values[1]));
+        }
 
-                String url = String.format(FlickrURL.flickr_photos_getSizes, Constants.API_KEY, currentPhotoId);
+        @Override
+        protected List<ImageDetails> doInBackground(String... params) {
+            try {
+                String photoSizesResult = "", url = "";
+
+                url = String.format(FlickrURL.flickr_photos_getSizes, Constants.API_KEY, params[0]);
 
                 HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+
                 int statusCode = connection.getResponseCode();
-                if (statusCode == HttpURLConnection.HTTP_OK) { // 200
-                    result = Utility.convertInputStreamToString(connection.getInputStream());
+                if (statusCode == HttpURLConnection.HTTP_OK) {
+                    photoSizesResult = Utility.convertInputStreamToString(connection.getInputStream());
                 }
                 connection.disconnect();
 
-                result = result.replace("jsonFlickrApi(", "").replace(")", "");
-                ResponsePhotoSizes photoSizeResponse = new ObjectMapper().readValue(result, ResponsePhotoSizes.class);
+                photoSizesResult = photoSizesResult.replace("jsonFlickrApi(", "").replace(")", "");
+                ResponsePhotoSizes photoSizeResponse = new ObjectMapper().readValue(photoSizesResult, ResponsePhotoSizes.class);
                 List<ResponsePhotoSizes.Sizes.Size> photoSizes = photoSizeResponse.getReceivedPhotoSize().getSizes();
 
-                for (int x = 0; x < photoSizes.size(); x++) {
-                    if (photoSizes.get(x).getLabel().equals(Constants.IMAGE_THUMBNAIL))
-                        thumbnailURL = photoSizes.get(x).getSource();
-                    if (photoSizes.get(x).getLabel().equals(Constants.IMAGE_MEDIUM))
-                        mediumURL = photoSizes.get(x).getSource();
+                thumbnailURL = photoSizes.get(2).getSource();
+                mediumURL = photoSizes.get(5).getSource();
 
-                    InputStream inputStreamThumbnail = null, inputStreamMedium = null;
-                    inputStreamThumbnail = new URL(thumbnailURL).openStream();
-                    inputStreamMedium = new URL(mediumURL).openStream();
-                    Bitmap bitmapThumbnail = BitmapFactory.decodeStream(inputStreamThumbnail);
-                    Bitmap bitmapMedium = BitmapFactory.decodeStream(inputStreamMedium);
+                InputStream inputStreamThumbnail = null, inputStreamMedium = null;
+                inputStreamThumbnail = new URL(thumbnailURL).openStream();
+                inputStreamMedium = new URL(mediumURL).openStream();
+                Bitmap bitmapThumbnail = BitmapFactory.decodeStream(inputStreamThumbnail);
+                Bitmap bitmapMedium = BitmapFactory.decodeStream(inputStreamMedium);
 
-                    imageDetailsList.add(new ImageDetails(currentPhotoId, currentPhotoTitle, bitmapThumbnail, bitmapMedium));
-                }
-                }
+                imageDetailsList.add(new ImageDetails(currentPhotoId, currentPhotoTitle, bitmapThumbnail, bitmapMedium));
+
+                Log.d("Downloaded images", String.valueOf(imageDetailsList.size()));
             }
             catch(Exception e)
             {
                 e.printStackTrace();
             }
-        }
-    }*/
 
-    /*class RetrieveImage extends AsyncTask<String,String,String>
-    {
+            return imageDetailsList;
+        }
         @Override
-        protected String doInBackground(String... params) {
-
-            String response="";
-             try {
-                //String urlString = "https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=39873e146da21b2b19d9c273e58a7323&tags=london&format=json&per_page=1&media=photos";
-                //String urlString = "https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=39873e146da21b2b19d9c273e58a7323&lat=25.817&lon=-80.353&format=json&media=photos";
-                 String urlString="";
-                 //Search Photos
-                 urlString=String.format(FlickrURL.flickr_search_getPhotos,Constants.API_KEY,25.81,-80.51);
-                 //urlString=String.format(FlickrURL.flickr_search_getPhotos,Constants.API_KEY,roundedLatitude,roundedLongitude);
-                 URL url = new URL(urlString);
-                URLConnection connection = url.openConnection();
-                HttpURLConnection httpConn = (HttpURLConnection) connection;
-
-                int responseCode = httpConn.getResponseCode();
-                InputStream inputStream = new BufferedInputStream(httpConn.getInputStream());
-                response = Utility.convertInputStreamToString(inputStream);
-
-                    ObjectMapper mapper=new ObjectMapper();
-                    ResponsePhotos photosResponse = mapper.readValue(response, ResponsePhotos.class);
-                    JSONObject root = new JSONObject(response.replace("jsonFlickrApi(", "").replace(")", ""));
-                    JSONObject photo = root.getJSONObject("photos");
-                    JSONArray imageJSONArray = photo.getJSONArray("photo");
-                    List<JSONObject> searchedPhotos=new ArrayList<>();
-                    //for (int i = 0; i < imageJSONArray.length(); i++) {
-                    for (int i = 0; i < 5; i++) {
-                        JSONObject item = imageJSONArray.getJSONObject(i);
-                       // Photos.Photo photo= new Photos.Photo();
-                        searchedPhotos.add(item);
-                    }
-
-            }
-                 catch (Exception e) {
-                e.printStackTrace();
-            }
-            return response;
+        protected void onPostExecute(List<ImageDetails> s) {
+            progressDialog.dismiss();
+            super.onPostExecute(s);
         }
-    }*/
+    }
 }
