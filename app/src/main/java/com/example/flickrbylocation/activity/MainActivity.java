@@ -78,7 +78,7 @@ public class MainActivity extends Activity implements LocationListener{
         imageGridView.setVerticalSpacing((int) spacing);
         imageGridView.setHorizontalSpacing((int) spacing);
 
-        new ImageSearchTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        new ImageSearchTask().execute();
 
 
     }
@@ -190,28 +190,27 @@ public class MainActivity extends Activity implements LocationListener{
                     photosResult = Utility.convertInputStreamToString(connection.getInputStream());
                 }
                 connection.disconnect();
-
+                ObjectMapper mapper=new ObjectMapper();
+                mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
                 photosResult = photosResult.replace("jsonFlickrApi(", "").replace(")", "");
-                photosResponse = new ObjectMapper().readValue(photosResult, ResponsePhotos.class);
-                int numberOfPhotos = photosResponse.getReceivedPhoto().getPhotos().size();
-                for (int i = 0; i < numberOfPhotos; i++) {
-                    currentPhotoTitle = photosResponse.getReceivedPhoto().getPhotos().get(i).getTitle();
-                    currentPhotoId = photosResponse.getReceivedPhoto().getPhotos().get(i).getId();
+                photosResponse = mapper.readValue(photosResult, ResponsePhotos.class);
+                Log.v("Photo Response",photosResponse.toString());
 
-                    //new ImageFetchTask().execute(currentPhotoId);
-                }
             }
             catch(Exception e)
             {
                 e.printStackTrace();
             }
-
             return photosResponse;
         }
         @Override
-        protected void onPostExecute(ResponsePhotos s) {
+        protected void onPostExecute(ResponsePhotos photosResponse) {
             progressDialog.dismiss();
-            super.onPostExecute(s);
+            for (int i = 0; i < photosResponse.getReceivedPhoto().getPhotos().size(); i++) {
+                currentPhotoId = photosResponse.getReceivedPhoto().getPhotos().get(i).getId();
+                new ImageFetchTask().execute(currentPhotoId);
+            }
+            super.onPostExecute(photosResponse);
         }
     }
     class ImageFetchTask extends AsyncTask<String,Integer,List<ImageDetails>> {
@@ -246,8 +245,10 @@ public class MainActivity extends Activity implements LocationListener{
                 }
                 connection.disconnect();
 
+                ObjectMapper mapper=new ObjectMapper();
+                mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
                 photoSizesResult = photoSizesResult.replace("jsonFlickrApi(", "").replace(")", "");
-                ResponsePhotoSizes photoSizeResponse = new ObjectMapper().readValue(photoSizesResult, ResponsePhotoSizes.class);
+                ResponsePhotoSizes photoSizeResponse = mapper.readValue(photoSizesResult, ResponsePhotoSizes.class);
                 List<ResponsePhotoSizes.Sizes.Size> photoSizes = photoSizeResponse.getReceivedPhotoSize().getSizes();
 
                 thumbnailURL = photoSizes.get(2).getSource();
@@ -260,8 +261,6 @@ public class MainActivity extends Activity implements LocationListener{
                 Bitmap bitmapMedium = BitmapFactory.decodeStream(inputStreamMedium);
 
                 imageDetailsList.add(new ImageDetails(currentPhotoId, currentPhotoTitle, bitmapThumbnail, bitmapMedium));
-
-                Log.d("Downloaded images", String.valueOf(imageDetailsList.size()));
             }
             catch(Exception e)
             {
@@ -274,6 +273,7 @@ public class MainActivity extends Activity implements LocationListener{
         protected void onPostExecute(List<ImageDetails> s) {
             progressDialog.dismiss();
             super.onPostExecute(s);
+            Log.d("Downloaded images", String.valueOf(s.size()));
         }
     }
 }
