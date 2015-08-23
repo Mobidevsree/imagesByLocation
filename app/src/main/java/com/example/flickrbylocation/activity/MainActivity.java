@@ -69,13 +69,6 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
         getCurrentLocation();
 
         imageGridView=(GridView)findViewById(R.id.imageGridView);
-        float spacing = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
-                Constants.GRIDVIEW_SPACING, getResources().getDisplayMetrics());
-        imageGridView.setNumColumns(5);
-        //imageGridView.setNumColumns(getDeviceUtil.getDeviceDimensions(MainActivity.this).x / Constants.GRIDVIEW_COLUMN_WIDTH);
-        imageGridView.setPadding((int) spacing, (int) spacing, (int) spacing, (int) spacing);
-        imageGridView.setVerticalSpacing((int) spacing);
-        imageGridView.setHorizontalSpacing((int) spacing);
     }
 
     @Override

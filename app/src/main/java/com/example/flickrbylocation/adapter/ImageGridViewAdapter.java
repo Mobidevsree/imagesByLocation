@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.GridView;
 import android.widget.ImageView;
 
 import com.example.flickrbylocation.activity.ViewPhotoActivity;
@@ -17,7 +18,6 @@ import java.util.List;
 
 public class ImageGridViewAdapter extends BaseAdapter {
 
-    //DownloadedImagesList downloadedImagesList= new DownloadedImagesList();
     List<ImageDetails> downloadedImages = new ArrayList<>();
     private Context context;
 
@@ -49,8 +49,8 @@ public class ImageGridViewAdapter extends BaseAdapter {
         else
             result = (ImageView) convertView;
 
-        result.setScaleType(ImageView.ScaleType.CENTER);
-        result.setImageBitmap(downloadedImages.get(position).getThumbnailBitmap());
+        result.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        result.setImageBitmap(downloadedImages.get(position).getMediumBitmap());
         result.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

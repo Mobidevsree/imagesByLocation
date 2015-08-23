@@ -20,10 +20,10 @@ public class ViewPhotoActivity extends Activity {
         setContentView(R.layout.activity_view_photo);
         context = this;
         int currentPosition=getIntent().getExtras().getInt(Constants.CURRENT_POSITION);
-        viewPager=(ViewPager)findViewById(R.id.pager);
+        viewPager = (ViewPager) findViewById(R.id.pager);
 
         ViewPhotoAdapter viewPhotoAdapter = new ViewPhotoAdapter(ViewPhotoActivity.this);
         viewPager.setAdapter(viewPhotoAdapter);
-        viewPager.setCurrentItem(currentPosition);//TODO set current item
+        viewPager.setCurrentItem(currentPosition);
     }
 }
