@@ -13,10 +13,10 @@ public class DownloadedImagesList {
         private Bitmap thumbnailBitmap;
         private Bitmap mediumBitmap;
 
-        public ImageDetails(String photoId, String photoTitle, Bitmap bitmap, Bitmap mediumBitmap) {
+        public ImageDetails(String photoId, String photoTitle, Bitmap thumbnailBitmap, Bitmap mediumBitmap) {
             this.photoId = photoId;
             this.photoTitle = photoTitle;
-            this.thumbnailBitmap = bitmap;
+            this.thumbnailBitmap = thumbnailBitmap;
             this.mediumBitmap = mediumBitmap;
         }
 

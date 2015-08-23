@@ -28,7 +28,5 @@ dependencies {
     compile 'com.android.support:appcompat-v7:22.2.0'
     compile files('libs/jackson-core-2.2.3.jar')
     compile files('libs/jackson-databind-2.2.3.jar')
-    compile files('libs/robospice-1.4.14.jar')
-    compile files('libs/robospice-cache-1.4.14.jar')
     compile files('libs/jackson-annotations-2.2.3.jar')
 }

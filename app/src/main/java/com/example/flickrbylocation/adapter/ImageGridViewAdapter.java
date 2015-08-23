@@ -1,13 +1,16 @@
 package com.example.flickrbylocation.adapter;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 
+import com.example.flickrbylocation.activity.ViewPhotoActivity;
 import com.example.flickrbylocation.pojo.DownloadedImagesList;
 import com.example.flickrbylocation.pojo.DownloadedImagesList.ImageDetails;
+import com.example.flickrbylocation.utility.Constants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +42,7 @@ public class ImageGridViewAdapter extends BaseAdapter {
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(final int position, final View convertView, ViewGroup parent) {
         ImageView result;
         if (convertView == null)
             result = new ImageView(context);
@@ -51,7 +54,9 @@ public class ImageGridViewAdapter extends BaseAdapter {
         result.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                Intent intent = new Intent(context, ViewPhotoActivity.class);
+                intent.putExtra(Constants.CURRENT_POSITION,position);
+                context.startActivity(intent);
             }
         });
 

@@ -1,6 +1,5 @@
 package com.example.flickrbylocation.activity;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -16,18 +15,21 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.util.Log;
+import android.support.v7.app.ActionBarActivity;
 import android.util.TypedValue;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.widget.GridView;
+import android.widget.Toast;
 
 import com.example.flickrbylocation.R;
 import com.example.flickrbylocation.adapter.ImageGridViewAdapter;
-import com.example.flickrbylocation.pojo.CurrentDeviceLocation;
 import com.example.flickrbylocation.pojo.DownloadedImagesList;
 import com.example.flickrbylocation.pojo.DownloadedImagesList.ImageDetails;
 import com.example.flickrbylocation.pojo.ResponsePhotoSizes;
 import com.example.flickrbylocation.pojo.ResponsePhotos;
-import com.example.flickrbylocation.request.FlickrURL;
+import com.example.flickrbylocation.utility.FlickrURL;
 import com.example.flickrbylocation.utility.Constants;
 import com.example.flickrbylocation.utility.Utility;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -38,7 +40,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 
-public class MainActivity extends Activity implements LocationListener{
+public class MainActivity extends ActionBarActivity implements LocationListener{
 
     private String thumbnailURL, mediumURL, currentPhotoId, currentPhotoTitle;
     private GridView imageGridView;
@@ -62,6 +64,7 @@ public class MainActivity extends Activity implements LocationListener{
         setContentView(R.layout.activity_main);
         context=this;
 
+        getSupportActionBar().setTitle(R.string.app_name);
         verifyConnectivitySettings();
         getCurrentLocation();
 
@@ -73,6 +76,27 @@ public class MainActivity extends Activity implements LocationListener{
         imageGridView.setPadding((int) spacing, (int) spacing, (int) spacing, (int) spacing);
         imageGridView.setVerticalSpacing((int) spacing);
         imageGridView.setHorizontalSpacing((int) spacing);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.actionbar_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            // action with ID action_refresh was selected
+            case R.id.actionbar_refresh:
+                Toast.makeText(this, "Refresh selected", Toast.LENGTH_SHORT).show();
+                getCurrentLocation();
+                break;
+            default:
+                break;
+        }
+        return true;
     }
 
     private void verifyConnectivitySettings() {
@@ -100,12 +124,6 @@ public class MainActivity extends Activity implements LocationListener{
             });
             dialog.show();
         }
-    }
-    @Override
-    public void onResume()
-    {
-        //getCurrentLocation();
-        super.onResume();
     }
 
     private void getCurrentLocation()
@@ -177,23 +195,18 @@ public class MainActivity extends Activity implements LocationListener{
 
     @Override
     public void onLocationChanged(Location location) {
-       // getCurrentLocation();
     }
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
-
-        //getCurrentLocation();
     }
 
     @Override
     public void onProviderEnabled(String provider) {
-        //getCurrentLocation();
     }
 
     @Override
     public void onProviderDisabled(String provider) {
-
     }
 
     class ImageSearchTask extends AsyncTask<String,Integer,ResponsePhotos> {
@@ -232,65 +245,66 @@ public class MainActivity extends Activity implements LocationListener{
         }
         @Override
         protected void onPostExecute(ResponsePhotos photosResponse) {
+            new ImageFetchTask().execute(photosResponse);
             progressDialog.dismiss();
-            numberOfPhotosSearched=photosResponse.getReceivedPhoto().getPhotos().size();
-            //numberOfPhotosSearched= 100;
-            for (int i = 0; i < numberOfPhotosSearched; i++) {
-                currentPhotoId = photosResponse.getReceivedPhoto().getPhotos().get(i).getId();
-                currentPhotoTitle = photosResponse.getReceivedPhoto().getPhotos().get(i).getTitle();
-                new ImageFetchTask().execute(currentPhotoId,currentPhotoTitle);
-            }
             super.onPostExecute(photosResponse);
         }
     }
-    class ImageFetchTask extends AsyncTask<String,Integer,DownloadedImagesList> {
-        private ProgressDialog progressDialog;
+    class ImageFetchTask extends AsyncTask<ResponsePhotos,Integer,DownloadedImagesList> {
+        private ProgressDialog progressDialog1;
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            progressDialog = new ProgressDialog(MainActivity.this);
-            progressDialog.setMessage("Downloading Photos from Flickr. Please wait...");
-            progressDialog.show();
+            progressDialog1 = new ProgressDialog(MainActivity.this);
+            progressDialog1.setMessage("Downloading Photos from Flickr. Please wait...");
+            progressDialog1.show();
         }
 
         @Override
         protected void onProgressUpdate(Integer... values) {
             super.onProgressUpdate(values);
-            progressDialog.setMessage(String.format("Downloading photos from Flickr %s/%s. Please wait...", values[0], values[1]));
+            progressDialog1.setMessage(String.format("Downloading photos from Flickr %s/%s. Please wait...", values[0], values[1]));
         }
 
         @Override
-        protected DownloadedImagesList doInBackground(String... params) {
+        protected DownloadedImagesList doInBackground(ResponsePhotos... params) {
             try {
+                ResponsePhotos receivedPhoto=params[0];
                 String photoSizesResult = "", url = "";
+                numberOfPhotosSearched=receivedPhoto.getReceivedPhoto().getPhotos().size();
+                numberOfPhotosSearched=10;
+                for(int i=0;i<numberOfPhotosSearched;i++) {
+                    currentPhotoId = receivedPhoto.getReceivedPhoto().getPhotos().get(i).getId();
+                    currentPhotoTitle = receivedPhoto.getReceivedPhoto().getPhotos().get(i).getTitle();
 
-                url = String.format(FlickrURL.flickr_photos_getSizes, Constants.API_KEY, params[0]);
+                    url = String.format(FlickrURL.flickr_photos_getSizes, Constants.API_KEY, currentPhotoId);
 
-                HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                    HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 
-                int statusCode = connection.getResponseCode();
-                if (statusCode == HttpURLConnection.HTTP_OK) {
-                    photoSizesResult = Utility.convertInputStreamToString(connection.getInputStream());
+                    int statusCode = connection.getResponseCode();
+                    if (statusCode == HttpURLConnection.HTTP_OK) {
+                        photoSizesResult = Utility.convertInputStreamToString(connection.getInputStream());
+                    }
+                    connection.disconnect();
+
+                    ObjectMapper mapper = new ObjectMapper();
+                    mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+                    photoSizesResult = photoSizesResult.replace("jsonFlickrApi(", "").replace(")", "");
+                    ResponsePhotoSizes photoSizeResponse = mapper.readValue(photoSizesResult, ResponsePhotoSizes.class);
+                    List<ResponsePhotoSizes.Sizes.Size> photoSizes = photoSizeResponse.getReceivedPhotoSize().getSizes();
+
+                    thumbnailURL = photoSizes.get(2).getSource();
+                    mediumURL=photoSizes.get(5).getSource();
+
+                    InputStream inputStreamThumbnail = null, inputStreamMedium=null;
+                    inputStreamThumbnail = new URL(thumbnailURL).openStream();
+                    inputStreamMedium = new URL(mediumURL).openStream();
+                    Bitmap bitmapThumbnail = BitmapFactory.decodeStream(inputStreamThumbnail);
+                    Bitmap bitmapMedium = BitmapFactory.decodeStream(inputStreamMedium);
+                    publishProgress(i, numberOfPhotosSearched);
+                    downloadedImages.setNewImage(new ImageDetails(currentPhotoId,currentPhotoTitle, bitmapThumbnail, bitmapMedium));
                 }
-                connection.disconnect();
-
-                ObjectMapper mapper=new ObjectMapper();
-                mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-                photoSizesResult = photoSizesResult.replace("jsonFlickrApi(", "").replace(")", "");
-                ResponsePhotoSizes photoSizeResponse = mapper.readValue(photoSizesResult, ResponsePhotoSizes.class);
-                List<ResponsePhotoSizes.Sizes.Size> photoSizes = photoSizeResponse.getReceivedPhotoSize().getSizes();
-
-                thumbnailURL = photoSizes.get(2).getSource();
-                mediumURL = photoSizes.get(5).getSource();
-
-                InputStream inputStreamThumbnail = null, inputStreamMedium = null;
-                inputStreamThumbnail = new URL(thumbnailURL).openStream();
-                inputStreamMedium = new URL(mediumURL).openStream();
-                Bitmap bitmapThumbnail = BitmapFactory.decodeStream(inputStreamThumbnail);
-                Bitmap bitmapMedium = BitmapFactory.decodeStream(inputStreamMedium);
-
-                downloadedImages.setNewImage(new ImageDetails(params[0], params[1], bitmapThumbnail, bitmapMedium));
             }
             catch(Exception e)
             {
@@ -300,7 +314,7 @@ public class MainActivity extends Activity implements LocationListener{
         }
         @Override
         protected void onPostExecute(DownloadedImagesList s) {
-            progressDialog.dismiss();
+            progressDialog1.dismiss();
             super.onPostExecute(s);
             if(s.getDownloadedImagesList().size()==numberOfPhotosSearched) {
                 imageGridViewAdapter = new ImageGridViewAdapter(context,s);
