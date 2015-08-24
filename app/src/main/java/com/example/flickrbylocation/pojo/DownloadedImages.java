@@ -9,13 +9,11 @@ public class DownloadedImages {
 
     public static class ImageDetails {
         private String photoId;
-        private String photoTitle;
         private Bitmap thumbnailBitmap;
         private Bitmap mediumBitmap;
 
-        public ImageDetails(String photoId, String photoTitle, Bitmap thumbnailBitmap, Bitmap mediumBitmap) {
+        public ImageDetails(String photoId, Bitmap thumbnailBitmap, Bitmap mediumBitmap) {
             this.photoId = photoId;
-            this.photoTitle = photoTitle;
             this.thumbnailBitmap = thumbnailBitmap;
             this.mediumBitmap = mediumBitmap;
         }
@@ -26,14 +24,6 @@ public class DownloadedImages {
 
         public void setPhotoId(String photoId) {
             this.photoId = photoId;
-        }
-
-        public String getPhotoTitle() {
-            return photoTitle;
-        }
-
-        public void setPhotoTitle(String photoTitle) {
-            this.photoTitle = photoTitle;
         }
 
         public Bitmap getThumbnailBitmap() {
@@ -53,13 +43,13 @@ public class DownloadedImages {
         }
     }
 
-    private ImageDetails newImage;
+    private ImageDetails image;
 
-    public ImageDetails getNewImage() {
-        return newImage;
+    public ImageDetails getImage() {
+        return image;
     }
 
-    public void setNewImage(ImageDetails newImage) {
-        this.newImage = newImage;
+    public void setImage(ImageDetails image) {
+        this.image = image;
     }
 }

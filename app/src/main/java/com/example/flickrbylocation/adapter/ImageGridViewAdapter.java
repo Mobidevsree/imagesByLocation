@@ -45,7 +45,7 @@ public class ImageGridViewAdapter extends BaseAdapter {
             result = (ImageView) convertView;
 
         final String photoId= DataManager.getInstance().getReceivedPhotos().getReceivedPhoto().getPhotos().get(position).getId();
-        Bitmap imageBitmap= DataManager.getInstance().getDownloadedImagesHashMap().get(photoId).getNewImage().getThumbnailBitmap();
+        Bitmap imageBitmap= DataManager.getInstance().getDownloadedImagesHashMap().get(photoId).getImage().getThumbnailBitmap();
 
         result.setScaleType(ImageView.ScaleType.CENTER_CROP);
         result.setImageBitmap(imageBitmap);

@@ -24,7 +24,7 @@ public class ViewPhotoActivity extends AppCompatActivity {
         ImageView selectedImage= (ImageView) findViewById(R.id.viewPhoto);
 
         String currentPhotoId=getIntent().getExtras().getString(Constants.CURRENT_PHOTO_ID);
-        selectedImage.setImageBitmap(DataManager.getInstance().getDownloadedImagesHashMap().get(currentPhotoId).getNewImage().getMediumBitmap());
+        selectedImage.setImageBitmap(DataManager.getInstance().getDownloadedImagesHashMap().get(currentPhotoId).getImage().getMediumBitmap());
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {

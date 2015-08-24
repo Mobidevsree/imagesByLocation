@@ -1,19 +1,22 @@
 package com.example.flickrbylocation.pojo;
 
-
 import android.content.Context;
 
 import com.example.flickrbylocation.activity.MainActivity;
+import com.example.flickrbylocation.utility.Constants;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class DataManager {
 
     private static DataManager instance;
-    private double latitude=0.0,longitude;
+    private double latitude,longitude;
     private Context context;
     private ResponsePhotos receivedPhotos=new ResponsePhotos();
     private HashMap<String,DownloadedImages> downloadedImagesHashMap=new HashMap<>();
+    static int numberOfPhotosRemaining, numberOfPhotosSearched, startIndex, endIndex, counter;
 
     private DataManager() {  }
 
@@ -27,9 +30,7 @@ public class DataManager {
     public void setDeviceCoordinates(Context ctx,double receivedLatitude, double receivedLongitude)
     {
         context=ctx;
-        double latitudeDiff=receivedLatitude-latitude;
-        double longitudeDiff=receivedLongitude-longitude;
-        if(latitudeDiff>1 ||longitudeDiff>1) {
+        if((receivedLatitude-latitude)>1 ||(latitude-receivedLatitude>1)||(receivedLongitude-longitude)>1 ||(longitude-receivedLongitude)>1) {
             latitude = receivedLatitude;
             longitude = receivedLongitude;
             ImageSearchCallBack callBack = new ImageSearchCallBack();
@@ -42,21 +43,8 @@ public class DataManager {
         @Override
         public void onSuccess(ResponsePhotos receivedPhotos) {
             setReceivedPhotos(receivedPhotos);
-            ImageFetchCallBack callBack=new ImageFetchCallBack();
-           /* int numberOfPhotosRemaining,numberOfPhotosSearched, downloadCount;
-            numberOfPhotosSearched=receivedPhotos.getReceivedPhoto().getPhotos().size();
-           // numberOfPhotosSearched= 250;
-            if(numberOfPhotosSearched>50) {
-                numberOfPhotosRemaining = numberOfPhotosSearched-50;
-                downloadCount=50;
-            }
-            else
-            {
-                numberOfPhotosRemaining=numberOfPhotosSearched;
-                downloadCount= numberOfPhotosRemaining;
-            }
-            for(int i=0;i<)*/
-            new ImageFetchTask(context,callBack).execute(receivedPhotos);
+            initDownloadNumbers();
+            downloadAllImages();
         }
 
         @Override
@@ -67,7 +55,9 @@ public class DataManager {
 
         @Override
         public void onSuccess(HashMap<String, DownloadedImages> imagesHashMap) {
-            setDownloadedImagesHashMap(imagesHashMap);
+            updateDownloadedImagesHashMap(imagesHashMap);
+            numberOfPhotosRemaining=numberOfPhotosSearched-downloadedImagesHashMap.size();
+            if(numberOfPhotosRemaining>0)downloadAllImages();
             MainActivity.loadData();
         }
 
@@ -91,5 +81,43 @@ public class DataManager {
 
     public void setDownloadedImagesHashMap(HashMap<String, DownloadedImages> downloadedImagesHashMap) {
         this.downloadedImagesHashMap = downloadedImagesHashMap;
+    }
+
+    private void updateDownloadedImagesHashMap(HashMap<String, DownloadedImages> downloadedImagesHashMap) {
+        this.downloadedImagesHashMap.putAll(downloadedImagesHashMap);
+    }
+
+    private void downloadAllImages() {
+        if ((numberOfPhotosRemaining > 0) && (numberOfPhotosRemaining < Constants.DOWNLOAD_LIMIT)) {
+            List<String> photoIdList = new ArrayList<>();
+            startIndex = endIndex;
+            endIndex = numberOfPhotosSearched;
+            for (int i = startIndex; i < endIndex; i++) {
+                photoIdList.add(receivedPhotos.getReceivedPhoto().getPhotos().get(i).getId());
+            }
+            startFetchTask(photoIdList);
+        } else if (numberOfPhotosRemaining >= Constants.DOWNLOAD_LIMIT) {
+            List<String> photoIdList = new ArrayList<>();
+            startIndex = endIndex;
+            endIndex = counter * Constants.DOWNLOAD_LIMIT;
+            for (int i = startIndex; i < endIndex; i++) {
+                photoIdList.add(receivedPhotos.getReceivedPhoto().getPhotos().get(i).getId());
+            }
+            startFetchTask(photoIdList);
+            counter++;
+        }
+    }
+
+    private void initDownloadNumbers() {
+        numberOfPhotosSearched = receivedPhotos.getReceivedPhoto().getPhotos().size();
+        //numberOfPhotosSearched = 60;
+        numberOfPhotosRemaining = numberOfPhotosSearched;
+        counter = 1;
+        endIndex = 0;
+    }
+
+    private void startFetchTask(List<String> photoIds) {
+        ImageFetchCallBack callBack = new ImageFetchCallBack();
+        new ImageFetchTask(context, callBack).execute(photoIds);
     }
 }
