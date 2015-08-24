@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
+import android.widget.Toast;
 
 import com.example.flickrbylocation.adapter.ImageGridViewAdapter;
 import com.example.flickrbylocation.utility.Constants;
@@ -54,24 +55,24 @@ public class ImageFetchTask extends AsyncTask<ResponsePhotos,Integer,HashMap<Str
             ResponsePhotos receivedPhoto=params[0];
             String photoSizesResult = "", url = "";
             numberOfPhotosSearched=receivedPhoto.getReceivedPhoto().getPhotos().size();
-            /*if(numberOfPhotosSearched>50) {
+            numberOfPhotosSearched= 250;
+            if(numberOfPhotosSearched>50) {
                 numberOfPhotosRemaining = numberOfPhotosSearched-50;
                 initialDownloadCount=50;
             }
             else
             {
                 numberOfPhotosRemaining=numberOfPhotosSearched;
-                initialDownloadCount= numberOfPhotosSearched;
-            }*/
+                initialDownloadCount= numberOfPhotosRemaining;
+            }
 
+            int x=0;
+            while(x<numberOfPhotosSearched) {
+               // for (int i = 0; i < numberOfPhotosSearched; i++) {
 
-            numberOfPhotosSearched=10;
-            //int x=0;
-           // while(x<numberOfPhotosSearched) {
-                for (int i = 0; i < numberOfPhotosSearched; i++) {
-
-                //for (int i = 0; i < initialDownloadCount; i++) {
-                    String currentPhotoId = receivedPhoto.getReceivedPhoto().getPhotos().get(i).getId();
+                for (int i = 0; i < initialDownloadCount; i++) {
+                    String done="Done";
+                    /*String currentPhotoId = receivedPhoto.getReceivedPhoto().getPhotos().get(i).getId();
                     String currentPhotoTitle = receivedPhoto.getReceivedPhoto().getPhotos().get(i).getTitle();
 
                     url = String.format(FlickrURL.flickr_photos_getSizes, Constants.API_KEY, currentPhotoId);
@@ -101,20 +102,21 @@ public class ImageFetchTask extends AsyncTask<ResponsePhotos,Integer,HashMap<Str
                     publishProgress(i, numberOfPhotosSearched);
                     downloadedImage = new DownloadedImages();
                     downloadedImage.setNewImage(new DownloadedImages.ImageDetails(currentPhotoId, currentPhotoTitle, bitmapThumbnail, bitmapMedium));
-                    downloadedImagesHashMap.put(currentPhotoId, downloadedImage);
-                    //numberOfPhotosSearched++;
+                    downloadedImagesHashMap.put(currentPhotoId, downloadedImage);*/
                 }
 
-                /*if(numberOfPhotosSearched>50) {
-                    numberOfPhotosRemaining = numberOfPhotosSearched-50;
+
+                if(numberOfPhotosRemaining>=50) {
+                    numberOfPhotosRemaining = numberOfPhotosRemaining-50;
                     initialDownloadCount=50;
                 }
                 else
                 {
-                    numberOfPhotosRemaining=numberOfPhotosSearched;
-                    initialDownloadCount= numberOfPhotosSearched;
-                }*/
-            //}
+                    initialDownloadCount= numberOfPhotosRemaining;
+                    numberOfPhotosRemaining=numberOfPhotosRemaining-50;
+                }
+                x=x+initialDownloadCount;
+            }
         }
         catch(Exception e)
         {

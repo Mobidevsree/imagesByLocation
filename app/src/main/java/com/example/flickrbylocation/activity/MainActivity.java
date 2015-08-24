@@ -1,22 +1,17 @@
 package com.example.flickrbylocation.activity;
 
 import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v7.app.ActionBarActivity;
-import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -26,18 +21,6 @@ import android.widget.Toast;
 import com.example.flickrbylocation.R;
 import com.example.flickrbylocation.adapter.ImageGridViewAdapter;
 import com.example.flickrbylocation.pojo.DataManager;
-import com.example.flickrbylocation.pojo.ResponsePhotoSizes;
-import com.example.flickrbylocation.pojo.ResponsePhotos;
-import com.example.flickrbylocation.utility.FlickrURL;
-import com.example.flickrbylocation.utility.Constants;
-import com.example.flickrbylocation.utility.Utility;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.List;
 
 public class MainActivity extends ActionBarActivity implements LocationListener{
 
@@ -59,7 +42,6 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
         imageGridView=(GridView)findViewById(R.id.imageGridView);
             imageGridViewAdapter = new ImageGridViewAdapter(context);
             imageGridView.setAdapter(imageGridViewAdapter);
-            imageGridViewAdapter.notifyDataSetChanged();
     }
 
     public static void loadData()
