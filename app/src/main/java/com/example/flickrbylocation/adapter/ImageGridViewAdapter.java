@@ -44,8 +44,8 @@ public class ImageGridViewAdapter extends BaseAdapter {
         else
             result = (ImageView) convertView;
 
-        String photoId= DataManager.getInstance().getReceivedPhotos().getReceivedPhoto().getPhotos().get(position).getId();
-        Bitmap imageBitmap= DataManager.getInstance().getDownloadedImagesHashMap().get(photoId).getNewImage().getMediumBitmap();
+        final String photoId= DataManager.getInstance().getReceivedPhotos().getReceivedPhoto().getPhotos().get(position).getId();
+        Bitmap imageBitmap= DataManager.getInstance().getDownloadedImagesHashMap().get(photoId).getNewImage().getThumbnailBitmap();
 
         result.setScaleType(ImageView.ScaleType.CENTER_CROP);
         result.setImageBitmap(imageBitmap);
@@ -53,7 +53,7 @@ public class ImageGridViewAdapter extends BaseAdapter {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(context, ViewPhotoActivity.class);
-                intent.putExtra(Constants.CURRENT_POSITION,position);
+                intent.putExtra(Constants.CURRENT_PHOTO_ID,photoId);
                 context.startActivity(intent);
             }
         });

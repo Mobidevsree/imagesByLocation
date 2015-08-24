@@ -1,28 +1,39 @@
 package com.example.flickrbylocation.activity;
 
-import android.app.Activity;
-import android.content.Context;
 import android.os.Bundle;
-import android.support.v4.view.ViewPager;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
+import android.view.MenuItem;
+import android.widget.ImageView;
 
 import com.example.flickrbylocation.R;
-import com.example.flickrbylocation.adapter.ViewPhotoAdapter;
+import com.example.flickrbylocation.pojo.DataManager;
 import com.example.flickrbylocation.utility.Constants;
 
-public class ViewPhotoActivity extends Activity {
+public class ViewPhotoActivity extends AppCompatActivity {
 
-    private Context context;
-    private ViewPager viewPager;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_view_photo);
-        context = this;
-        int currentPosition=getIntent().getExtras().getInt(Constants.CURRENT_POSITION);
-        viewPager = (ViewPager) findViewById(R.id.pager);
 
-        ViewPhotoAdapter viewPhotoAdapter = new ViewPhotoAdapter(ViewPhotoActivity.this);
-        viewPager.setAdapter(viewPhotoAdapter);
-        viewPager.setCurrentItem(currentPosition);
+        ActionBar actionBar=getSupportActionBar();
+        actionBar.setTitle(R.string.selected_Image);
+        actionBar.setDisplayHomeAsUpEnabled(true);
+        actionBar.setHomeButtonEnabled(true);
+        ImageView selectedImage= (ImageView) findViewById(R.id.viewPhoto);
+
+        String currentPhotoId=getIntent().getExtras().getString(Constants.CURRENT_PHOTO_ID);
+        selectedImage.setImageBitmap(DataManager.getInstance().getDownloadedImagesHashMap().get(currentPhotoId).getNewImage().getMediumBitmap());
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                this.finish();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 }

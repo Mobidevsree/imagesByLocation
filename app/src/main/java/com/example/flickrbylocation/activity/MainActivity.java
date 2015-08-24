@@ -11,7 +11,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -22,30 +22,32 @@ import com.example.flickrbylocation.R;
 import com.example.flickrbylocation.adapter.ImageGridViewAdapter;
 import com.example.flickrbylocation.pojo.DataManager;
 
-public class MainActivity extends ActionBarActivity implements LocationListener{
+public class MainActivity extends AppCompatActivity implements LocationListener {
 
     private GridView imageGridView;
     private LocationManager locationManager;
     private Context context;
     static ImageGridViewAdapter imageGridViewAdapter;
-    /** Called when the activity is first created. */
+
+    /**
+     * Called when the activity is first created.
+     */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        context=this;
+        context = this;
 
         getSupportActionBar().setTitle(R.string.app_name);
         verifyConnectivitySettings();
         getCurrentLocation();
 
-        imageGridView=(GridView)findViewById(R.id.imageGridView);
-            imageGridViewAdapter = new ImageGridViewAdapter(context);
-            imageGridView.setAdapter(imageGridViewAdapter);
+        imageGridView = (GridView) findViewById(R.id.imageGridView);
+        imageGridViewAdapter = new ImageGridViewAdapter(context);
+        imageGridView.setAdapter(imageGridViewAdapter);
     }
 
-    public static void loadData()
-    {
+    public static void loadData() {
         imageGridViewAdapter.notifyDataSetChanged();
     }
 
@@ -75,8 +77,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
                 = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
 
-        if(!(activeNetworkInfo!=null && activeNetworkInfo.isConnected()))
-        {
+        if (!(activeNetworkInfo != null && activeNetworkInfo.isConnected())) {
             AlertDialog.Builder dialog = new AlertDialog.Builder(context);
             dialog.setMessage(context.getResources().getString(R.string.network_not_enabled));
             dialog.setPositiveButton(context.getResources().getString(R.string.enable), new DialogInterface.OnClickListener() {
@@ -97,9 +98,8 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
         }
     }
 
-    private void getCurrentLocation()
-    {
-        double currentDeviceLatitude,currentDeviceLongitude;
+    private void getCurrentLocation() {
+        double currentDeviceLatitude, currentDeviceLongitude;
         boolean isGPSEnabled = false;
         boolean isNetworkEnabled = false;
         boolean canGetLocation = false;
@@ -119,7 +119,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
                 dialog.setPositiveButton(context.getResources().getString(R.string.enable), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-                        Intent myIntent = new Intent( Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                        Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
                         startActivity(myIntent);
                         finish();
                         paramDialogInterface.dismiss();
@@ -133,31 +133,29 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
                     }
                 });
                 dialog.show();
-            }
-            else {
+            } else {
                 canGetLocation = true;
                 // First get location from Network Provider
                 if (isNetworkEnabled) {
-                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,0 ,0, this);
+                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
                     if (locationManager != null) {
                         location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
                         if (location != null) {
                             currentDeviceLatitude = location.getLatitude();
                             currentDeviceLongitude = location.getLongitude();
-                            DataManager.getInstance().setDeviceCoordinates(context,currentDeviceLatitude,currentDeviceLongitude);
+                            DataManager.getInstance().setDeviceCoordinates(context, currentDeviceLatitude, currentDeviceLongitude);
                         }
                     }
                 }
                 // if GPS Enabled get lat/long using GPS Services
                 if (isGPSEnabled) {
-                        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-                        if (locationManager != null) {
-                            location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                            if (location != null) {
-                                currentDeviceLatitude = location.getLatitude();
-                                currentDeviceLongitude = location.getLongitude();
-                                DataManager.getInstance().setDeviceCoordinates(context, currentDeviceLatitude, currentDeviceLongitude);
-
+                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+                    if (locationManager != null) {
+                        location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                        if (location != null) {
+                            currentDeviceLatitude = location.getLatitude();
+                            currentDeviceLongitude = location.getLongitude();
+                            DataManager.getInstance().setDeviceCoordinates(context, currentDeviceLatitude, currentDeviceLongitude);
                         }
                     }
                 }

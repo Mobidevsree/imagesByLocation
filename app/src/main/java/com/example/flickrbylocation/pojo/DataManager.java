@@ -10,7 +10,7 @@ import java.util.HashMap;
 public class DataManager {
 
     private static DataManager instance;
-    private double latitude,longitude;
+    private double latitude=0.0,longitude;
     private Context context;
     private ResponsePhotos receivedPhotos=new ResponsePhotos();
     private HashMap<String,DownloadedImages> downloadedImagesHashMap=new HashMap<>();
@@ -24,13 +24,17 @@ public class DataManager {
         return instance;
     }
 
-    public void setDeviceCoordinates(Context ctx,double latitude, double longitude)
+    public void setDeviceCoordinates(Context ctx,double receivedLatitude, double receivedLongitude)
     {
-        this.latitude=latitude;
-        this.longitude=longitude;
         context=ctx;
-        ImageSearchCallBack callBack=new ImageSearchCallBack();
-        new ImageSearchTask(context, callBack).execute(String.valueOf(this.latitude),String.valueOf(this.longitude));
+        double latitudeDiff=receivedLatitude-latitude;
+        double longitudeDiff=receivedLongitude-longitude;
+        if(latitudeDiff>1 ||longitudeDiff>1) {
+            latitude = receivedLatitude;
+            longitude = receivedLongitude;
+            ImageSearchCallBack callBack = new ImageSearchCallBack();
+            new ImageSearchTask(context, callBack).execute(String.valueOf(latitude), String.valueOf(longitude));
+        }
     }
 
     private class ImageSearchCallBack implements ImageSearchTask.CallBack {
@@ -39,6 +43,19 @@ public class DataManager {
         public void onSuccess(ResponsePhotos receivedPhotos) {
             setReceivedPhotos(receivedPhotos);
             ImageFetchCallBack callBack=new ImageFetchCallBack();
+           /* int numberOfPhotosRemaining,numberOfPhotosSearched, downloadCount;
+            numberOfPhotosSearched=receivedPhotos.getReceivedPhoto().getPhotos().size();
+           // numberOfPhotosSearched= 250;
+            if(numberOfPhotosSearched>50) {
+                numberOfPhotosRemaining = numberOfPhotosSearched-50;
+                downloadCount=50;
+            }
+            else
+            {
+                numberOfPhotosRemaining=numberOfPhotosSearched;
+                downloadCount= numberOfPhotosRemaining;
+            }
+            for(int i=0;i<)*/
             new ImageFetchTask(context,callBack).execute(receivedPhotos);
         }
 
