@@ -10,13 +10,12 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import com.example.flickrbylocation.R;
-import com.example.flickrbylocation.pojo.DownloadedImagesList;
 
 public class ViewPhotoAdapter extends PagerAdapter {
 
     private Context context;
     private ImageView imageView;
-    private DownloadedImagesList downloadedImages=new DownloadedImagesList();
+    //private DownloadedImagesList downloadedImages=new DownloadedImagesList();
 
     public ViewPhotoAdapter(Context context)
     {
@@ -24,7 +23,7 @@ public class ViewPhotoAdapter extends PagerAdapter {
     }
     @Override
     public int getCount() {
-        return downloadedImages.getDownloadedImagesList().size();
+        return 0;
     }
 
     @Override
@@ -39,7 +38,7 @@ public class ViewPhotoAdapter extends PagerAdapter {
         View viewLayout = inflater.inflate(R.layout.adapter_view_photo, container, false);
 
         imageView = (ImageView) viewLayout.findViewById(R.id.imageView);
-        imageView.setImageBitmap(downloadedImages.getDownloadedImagesList().get(position).getMediumBitmap());
+        //imageView.setImageBitmap(downloadedImages.getDownloadedImagesList().get(position).getMediumBitmap());
 
         ((ViewPager) container).addView(viewLayout);
         return viewLayout;

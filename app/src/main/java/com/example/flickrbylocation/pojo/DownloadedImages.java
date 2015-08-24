@@ -5,7 +5,7 @@ import android.graphics.Bitmap;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DownloadedImagesList {
+public class DownloadedImages {
 
     public static class ImageDetails {
         private String photoId;
@@ -55,22 +55,11 @@ public class DownloadedImagesList {
 
     private ImageDetails newImage;
 
-    private List<ImageDetails> downloadedImagesList=new ArrayList<>();
-
     public ImageDetails getNewImage() {
         return newImage;
     }
 
     public void setNewImage(ImageDetails newImage) {
         this.newImage = newImage;
-        this.downloadedImagesList.add(newImage);
-    }
-
-    public List<ImageDetails> getDownloadedImagesList() {
-        return downloadedImagesList;
-    }
-
-    public void setDownloadedImagesList(List<ImageDetails> downloadedImageList) {
-        this.downloadedImagesList = downloadedImageList;
     }
 }

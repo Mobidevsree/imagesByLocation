@@ -25,8 +25,7 @@ import android.widget.Toast;
 
 import com.example.flickrbylocation.R;
 import com.example.flickrbylocation.adapter.ImageGridViewAdapter;
-import com.example.flickrbylocation.pojo.DownloadedImagesList;
-import com.example.flickrbylocation.pojo.DownloadedImagesList.ImageDetails;
+import com.example.flickrbylocation.pojo.DataManager;
 import com.example.flickrbylocation.pojo.ResponsePhotoSizes;
 import com.example.flickrbylocation.pojo.ResponsePhotos;
 import com.example.flickrbylocation.utility.FlickrURL;
@@ -42,21 +41,10 @@ import java.util.List;
 
 public class MainActivity extends ActionBarActivity implements LocationListener{
 
-    private String thumbnailURL, mediumURL, currentPhotoId, currentPhotoTitle;
     private GridView imageGridView;
     private LocationManager locationManager;
     private Context context;
-    private DownloadedImagesList downloadedImages=new DownloadedImagesList();
-    private int numberOfPhotosSearched;
-    private ResponsePhotos photosResponse;
-    private ImageGridViewAdapter imageGridViewAdapter;
-
-    private double currentDeviceLatitude,currentDeviceLongitude;
-    boolean isGPSEnabled = false;
-    boolean isNetworkEnabled = false;
-    boolean canGetLocation = false;
-    Location location;
-
+    static ImageGridViewAdapter imageGridViewAdapter;
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -69,6 +57,14 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
         getCurrentLocation();
 
         imageGridView=(GridView)findViewById(R.id.imageGridView);
+            imageGridViewAdapter = new ImageGridViewAdapter(context);
+            imageGridView.setAdapter(imageGridViewAdapter);
+            imageGridViewAdapter.notifyDataSetChanged();
+    }
+
+    public static void loadData()
+    {
+        imageGridViewAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -121,6 +117,11 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 
     private void getCurrentLocation()
     {
+        double currentDeviceLatitude,currentDeviceLongitude;
+        boolean isGPSEnabled = false;
+        boolean isNetworkEnabled = false;
+        boolean canGetLocation = false;
+        Location location;
         try {
             locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
             // getting GPS status
@@ -152,7 +153,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
                 dialog.show();
             }
             else {
-                this.canGetLocation = true;
+                canGetLocation = true;
                 // First get location from Network Provider
                 if (isNetworkEnabled) {
                     locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,0 ,0, this);
@@ -161,21 +162,20 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
                         if (location != null) {
                             currentDeviceLatitude = location.getLatitude();
                             currentDeviceLongitude = location.getLongitude();
-                            new ImageSearchTask().execute(String.valueOf(currentDeviceLatitude),String.valueOf(currentDeviceLongitude));
+                            DataManager.getInstance().setDeviceCoordinates(context,currentDeviceLatitude,currentDeviceLongitude);
                         }
                     }
                 }
                 // if GPS Enabled get lat/long using GPS Services
                 if (isGPSEnabled) {
-                    if (location == null) {
                         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
                         if (locationManager != null) {
                             location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                             if (location != null) {
                                 currentDeviceLatitude = location.getLatitude();
                                 currentDeviceLongitude = location.getLongitude();
-                                new ImageSearchTask().execute(String.valueOf(currentDeviceLatitude),String.valueOf(currentDeviceLongitude));
-                            }
+                                DataManager.getInstance().setDeviceCoordinates(context, currentDeviceLatitude, currentDeviceLongitude);
+
                         }
                     }
                 }
@@ -200,120 +200,5 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 
     @Override
     public void onProviderDisabled(String provider) {
-    }
-
-    class ImageSearchTask extends AsyncTask<String,Integer,ResponsePhotos> {
-        private ProgressDialog progressDialog;
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            progressDialog = new ProgressDialog(MainActivity.this);
-            progressDialog.setMessage("Searching Photos in Flickr. Please wait...");
-            progressDialog.show();
-        }
-
-        @Override
-        protected ResponsePhotos doInBackground(String... params) {
-            try {
-                String photosResult = "",url = "";
-                url = String.format(FlickrURL.flickr_search_getPhotos, Constants.API_KEY, params[0], params[1]);
-                HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-
-                int statusCode = connection.getResponseCode();
-                if (statusCode == HttpURLConnection.HTTP_OK) {
-                    photosResult = Utility.convertInputStreamToString(connection.getInputStream());
-                }
-                connection.disconnect();
-                ObjectMapper mapper=new ObjectMapper();
-                mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-                photosResult = photosResult.replace("jsonFlickrApi(", "").replace(")", "");
-                photosResponse = mapper.readValue(photosResult, ResponsePhotos.class);
-            }
-            catch(Exception e)
-            {
-                e.printStackTrace();
-            }
-            return photosResponse;
-        }
-        @Override
-        protected void onPostExecute(ResponsePhotos photosResponse) {
-            new ImageFetchTask().execute(photosResponse);
-            progressDialog.dismiss();
-            super.onPostExecute(photosResponse);
-        }
-    }
-    class ImageFetchTask extends AsyncTask<ResponsePhotos,Integer,DownloadedImagesList> {
-        private ProgressDialog progressDialog1;
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            progressDialog1 = new ProgressDialog(MainActivity.this);
-            progressDialog1.setMessage("Downloading Photos from Flickr. Please wait...");
-            progressDialog1.show();
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            super.onProgressUpdate(values);
-            progressDialog1.setMessage(String.format("Downloading photos from Flickr %s/%s. Please wait...", values[0], values[1]));
-        }
-
-        @Override
-        protected DownloadedImagesList doInBackground(ResponsePhotos... params) {
-            try {
-                ResponsePhotos receivedPhoto=params[0];
-                String photoSizesResult = "", url = "";
-                numberOfPhotosSearched=receivedPhoto.getReceivedPhoto().getPhotos().size();
-                numberOfPhotosSearched=10;
-                for(int i=0;i<numberOfPhotosSearched;i++) {
-                    currentPhotoId = receivedPhoto.getReceivedPhoto().getPhotos().get(i).getId();
-                    currentPhotoTitle = receivedPhoto.getReceivedPhoto().getPhotos().get(i).getTitle();
-
-                    url = String.format(FlickrURL.flickr_photos_getSizes, Constants.API_KEY, currentPhotoId);
-
-                    HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-
-                    int statusCode = connection.getResponseCode();
-                    if (statusCode == HttpURLConnection.HTTP_OK) {
-                        photoSizesResult = Utility.convertInputStreamToString(connection.getInputStream());
-                    }
-                    connection.disconnect();
-
-                    ObjectMapper mapper = new ObjectMapper();
-                    mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-                    photoSizesResult = photoSizesResult.replace("jsonFlickrApi(", "").replace(")", "");
-                    ResponsePhotoSizes photoSizeResponse = mapper.readValue(photoSizesResult, ResponsePhotoSizes.class);
-                    List<ResponsePhotoSizes.Sizes.Size> photoSizes = photoSizeResponse.getReceivedPhotoSize().getSizes();
-
-                    thumbnailURL = photoSizes.get(2).getSource();
-                    mediumURL=photoSizes.get(5).getSource();
-
-                    InputStream inputStreamThumbnail = null, inputStreamMedium=null;
-                    inputStreamThumbnail = new URL(thumbnailURL).openStream();
-                    inputStreamMedium = new URL(mediumURL).openStream();
-                    Bitmap bitmapThumbnail = BitmapFactory.decodeStream(inputStreamThumbnail);
-                    Bitmap bitmapMedium = BitmapFactory.decodeStream(inputStreamMedium);
-                    publishProgress(i, numberOfPhotosSearched);
-                    downloadedImages.setNewImage(new ImageDetails(currentPhotoId,currentPhotoTitle, bitmapThumbnail, bitmapMedium));
-                }
-            }
-            catch(Exception e)
-            {
-                e.printStackTrace();
-            }
-            return downloadedImages;
-        }
-        @Override
-        protected void onPostExecute(DownloadedImagesList s) {
-            progressDialog1.dismiss();
-            super.onPostExecute(s);
-            if(s.getDownloadedImagesList().size()==numberOfPhotosSearched) {
-                imageGridViewAdapter = new ImageGridViewAdapter(context,s);
-                imageGridView.setAdapter(imageGridViewAdapter);
-                imageGridViewAdapter.notifyDataSetChanged();
-            }
-        }
     }
 }

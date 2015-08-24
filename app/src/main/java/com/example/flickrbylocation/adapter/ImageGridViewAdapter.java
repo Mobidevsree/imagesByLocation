@@ -2,38 +2,33 @@ package com.example.flickrbylocation.adapter;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.GridView;
 import android.widget.ImageView;
 
 import com.example.flickrbylocation.activity.ViewPhotoActivity;
-import com.example.flickrbylocation.pojo.DownloadedImagesList;
-import com.example.flickrbylocation.pojo.DownloadedImagesList.ImageDetails;
+import com.example.flickrbylocation.pojo.DataManager;
 import com.example.flickrbylocation.utility.Constants;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class ImageGridViewAdapter extends BaseAdapter {
 
-    List<ImageDetails> downloadedImages = new ArrayList<>();
     private Context context;
 
-    public ImageGridViewAdapter(Context context,DownloadedImagesList downloadedImagesList)
+    public ImageGridViewAdapter(Context context)
     {
         this.context=context;
-        this.downloadedImages=downloadedImagesList.getDownloadedImagesList();
     }
     @Override
     public int getCount() {
-        return this.downloadedImages.size();
+        return DataManager.getInstance().getDownloadedImagesHashMap().size();
     }
 
     @Override
     public Object getItem(int position) {
-        return this.downloadedImages.get(position);
+        String photoId= DataManager.getInstance().getReceivedPhotos().getReceivedPhoto().getPhotos().get(position).getId();
+        return DataManager.getInstance().getDownloadedImagesHashMap().get(photoId);
     }
 
     @Override
@@ -49,8 +44,11 @@ public class ImageGridViewAdapter extends BaseAdapter {
         else
             result = (ImageView) convertView;
 
+        String photoId= DataManager.getInstance().getReceivedPhotos().getReceivedPhoto().getPhotos().get(position).getId();
+        Bitmap imageBitmap= DataManager.getInstance().getDownloadedImagesHashMap().get(photoId).getNewImage().getMediumBitmap();
+
         result.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        result.setImageBitmap(downloadedImages.get(position).getMediumBitmap());
+        result.setImageBitmap(imageBitmap);
         result.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

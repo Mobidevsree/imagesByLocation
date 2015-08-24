@@ -7,7 +7,6 @@ import android.support.v4.view.ViewPager;
 
 import com.example.flickrbylocation.R;
 import com.example.flickrbylocation.adapter.ViewPhotoAdapter;
-import com.example.flickrbylocation.pojo.DownloadedImagesList;
 import com.example.flickrbylocation.utility.Constants;
 
 public class ViewPhotoActivity extends Activity {
