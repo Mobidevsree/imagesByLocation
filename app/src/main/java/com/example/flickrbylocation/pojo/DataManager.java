@@ -110,7 +110,7 @@ public class DataManager {
 
     private void initDownloadNumbers() {
         numberOfPhotosSearched = receivedPhotos.getReceivedPhoto().getPhotos().size();
-        //numberOfPhotosSearched = 60;
+        numberOfPhotosSearched = 10;
         numberOfPhotosRemaining = numberOfPhotosSearched;
         counter = 1;
         endIndex = 0;

@@ -4,6 +4,10 @@ import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.Button;
 import android.widget.ImageView;
 
 import com.example.flickrbylocation.R;
@@ -21,10 +25,19 @@ public class ViewPhotoActivity extends AppCompatActivity {
         actionBar.setTitle(R.string.selected_Image);
         actionBar.setDisplayHomeAsUpEnabled(true);
         actionBar.setHomeButtonEnabled(true);
-        ImageView selectedImage= (ImageView) findViewById(R.id.viewPhoto);
+        final ImageView selectedImage= (ImageView) findViewById(R.id.viewPhoto);
+        Button animateButton=(Button) findViewById(R.id.animateButton);
 
         String currentPhotoId=getIntent().getExtras().getString(Constants.CURRENT_PHOTO_ID);
         selectedImage.setImageBitmap(DataManager.getInstance().getDownloadedImagesHashMap().get(currentPhotoId).getImage().getMediumBitmap());
+
+        animateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Animation animation = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.abc_shrink_fade_out_from_bottom);
+                selectedImage.startAnimation(animation);
+            }
+        });
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {

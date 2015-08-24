@@ -71,6 +71,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
         return true;
     }
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        if(DataManager.getInstance().getDownloadedImagesHashMap().size()==0) getCurrentLocation();
+    }
 
     private void verifyConnectivitySettings() {
         ConnectivityManager connectivityManager
