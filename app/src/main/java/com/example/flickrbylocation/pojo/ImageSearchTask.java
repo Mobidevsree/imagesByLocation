@@ -13,12 +13,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+/**
+ * Asynctask class to search the list of photos available in the current location.
+ */
 public class ImageSearchTask extends AsyncTask<String,Integer,ResponsePhotos> {
 
     private ProgressDialog progressDialog;
-    private Context context;
+    private final Context context;
     private ResponsePhotos photosResponse=new ResponsePhotos();
-    private CallBack mCallBack;
+    private final CallBack mCallBack;
 
     public ImageSearchTask(Context cxt, CallBack callBack)
     {
@@ -38,7 +41,7 @@ public class ImageSearchTask extends AsyncTask<String,Integer,ResponsePhotos> {
     protected ResponsePhotos doInBackground(String... params) {
 
         try {
-            String photosResult = "",url = "";
+            String photosResult = "",url;
             url = String.format(FlickrURL.flickr_search_getPhotos, Constants.API_KEY, params[0], params[1]);
             HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 
@@ -66,7 +69,7 @@ public class ImageSearchTask extends AsyncTask<String,Integer,ResponsePhotos> {
     }
 
     public interface CallBack{
-        public void onSuccess(ResponsePhotos receivedPhotos);
-        public void onFailure(String errorMsg);
+        void onSuccess(ResponsePhotos receivedPhotos);
+        void onFailure(String errorMsg);
     }
 }

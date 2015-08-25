@@ -14,6 +14,9 @@ import com.example.flickrbylocation.R;
 import com.example.flickrbylocation.pojo.DataManager;
 import com.example.flickrbylocation.utility.Constants;
 
+/**
+ * Activity to display the Photo selected from the MainActivity
+ */
 public class ViewPhotoActivity extends AppCompatActivity {
 
     @Override
@@ -28,9 +31,11 @@ public class ViewPhotoActivity extends AppCompatActivity {
         final ImageView selectedImage= (ImageView) findViewById(R.id.viewPhoto);
         Button animateButton=(Button) findViewById(R.id.animateButton);
 
+        // Get the photoId sent via Intent and display the Medium sized Bitmap
         String currentPhotoId=getIntent().getExtras().getString(Constants.CURRENT_PHOTO_ID);
         selectedImage.setImageBitmap(DataManager.getInstance().getDownloadedImagesHashMap().get(currentPhotoId).getImage().getMediumBitmap());
 
+        //Apply the animation on the displayed image
         animateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

@@ -2,9 +2,9 @@ package com.example.flickrbylocation.pojo;
 
 import android.graphics.Bitmap;
 
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * Class to store the images downloaded for the Thumbnail and Medium Bitmaps.
+ */
 public class DownloadedImages {
 
     public static class ImageDetails {

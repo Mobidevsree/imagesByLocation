@@ -4,6 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+
+/**
+ * Response class to map the list of photos searched using the current Device location.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ResponsePhotos {
     public static class Photos {

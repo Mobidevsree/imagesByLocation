@@ -11,6 +11,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -22,12 +23,13 @@ import com.example.flickrbylocation.R;
 import com.example.flickrbylocation.adapter.ImageGridViewAdapter;
 import com.example.flickrbylocation.pojo.DataManager;
 
+/**
+ * Activity to display the Flickr images searched based on the current Location.
+ */
 public class MainActivity extends AppCompatActivity implements LocationListener {
 
-    private GridView imageGridView;
-    private LocationManager locationManager;
     private Context context;
-    static ImageGridViewAdapter imageGridViewAdapter;
+    private static ImageGridViewAdapter imageGridViewAdapter;
 
     /**
      * Called when the activity is first created.
@@ -38,16 +40,22 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         setContentView(R.layout.activity_main);
         context = this;
 
-        getSupportActionBar().setTitle(R.string.app_name);
+        ActionBar actionBar=getSupportActionBar();
+        actionBar.setTitle(R.string.app_name);
+        //Verify the Connection Settings
         verifyConnectivitySettings();
+        //Fetch the Device's Current Location
         getCurrentLocation();
 
-        imageGridView = (GridView) findViewById(R.id.imageGridView);
+        GridView imageGridView = (GridView) findViewById(R.id.imageGridView);
         imageGridViewAdapter = new ImageGridViewAdapter(context);
         imageGridView.setAdapter(imageGridViewAdapter);
     }
 
-    public static void loadData() {
+    /**
+     * Refresh the Image Data
+     */
+    public static void refreshData() {
         imageGridViewAdapter.notifyDataSetChanged();
     }
 
@@ -61,7 +69,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            // action with ID action_refresh was selected
             case R.id.actionbar_refresh:
                 Toast.makeText(this, "Refresh selected", Toast.LENGTH_SHORT).show();
                 getCurrentLocation();
@@ -104,14 +111,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
     }
 
+    /**
+     * Verify if the Network Provider or GPS Provider is enabled. If both are disabled, prompt the user to enable the
+     * Location Settings. Once Enabled, get the current Device Location's Latitude & Longitude and search the photos.
+     */
     private void getCurrentLocation() {
         double currentDeviceLatitude, currentDeviceLongitude;
-        boolean isGPSEnabled = false;
-        boolean isNetworkEnabled = false;
-        boolean canGetLocation = false;
+        boolean isGPSEnabled;
+        boolean isNetworkEnabled;
         Location location;
         try {
-            locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+            LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
             // getting GPS status
             isGPSEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
             // getting network status
@@ -140,23 +150,20 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 });
                 dialog.show();
             } else {
-                canGetLocation = true;
-                // First get location from Network Provider
+                //Get location from Network Provider
                 if (isNetworkEnabled) {
                     locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
-                    if (locationManager != null) {
                         location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
                         if (location != null) {
                             currentDeviceLatitude = location.getLatitude();
                             currentDeviceLongitude = location.getLongitude();
                             DataManager.getInstance().setDeviceCoordinates(context, currentDeviceLatitude, currentDeviceLongitude);
-                        }
+
                     }
                 }
                 // if GPS Enabled get lat/long using GPS Services
                 if (isGPSEnabled) {
                     locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-                    if (locationManager != null) {
                         location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                         if (location != null) {
                             currentDeviceLatitude = location.getLatitude();
@@ -164,7 +171,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                             DataManager.getInstance().setDeviceCoordinates(context, currentDeviceLatitude, currentDeviceLongitude);
                         }
                     }
-                }
+
             }
 
         } catch (Exception e) {

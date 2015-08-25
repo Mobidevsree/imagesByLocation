@@ -12,9 +12,12 @@ import com.example.flickrbylocation.activity.ViewPhotoActivity;
 import com.example.flickrbylocation.pojo.DataManager;
 import com.example.flickrbylocation.utility.Constants;
 
+/**
+ * Adapter to display the photos in the MainActivity
+ */
 public class ImageGridViewAdapter extends BaseAdapter {
 
-    private Context context;
+    private final Context context;
 
     public ImageGridViewAdapter(Context context)
     {
@@ -38,18 +41,18 @@ public class ImageGridViewAdapter extends BaseAdapter {
 
     @Override
     public View getView(final int position, final View convertView, ViewGroup parent) {
-        ImageView result;
+        ImageView imageView;
         if (convertView == null)
-            result = new ImageView(context);
+            imageView=new ImageView(context);
         else
-            result = (ImageView) convertView;
+            imageView = (ImageView) convertView;
 
         final String photoId= DataManager.getInstance().getReceivedPhotos().getReceivedPhoto().getPhotos().get(position).getId();
         Bitmap imageBitmap= DataManager.getInstance().getDownloadedImagesHashMap().get(photoId).getImage().getThumbnailBitmap();
 
-        result.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        result.setImageBitmap(imageBitmap);
-        result.setOnClickListener(new View.OnClickListener() {
+        imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        imageView.setImageBitmap(imageBitmap);
+        imageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(context, ViewPhotoActivity.class);
@@ -57,7 +60,6 @@ public class ImageGridViewAdapter extends BaseAdapter {
                 context.startActivity(intent);
             }
         });
-
-        return result;
+        return imageView;
     }
 }

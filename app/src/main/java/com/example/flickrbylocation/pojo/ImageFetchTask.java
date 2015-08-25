@@ -18,10 +18,13 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * Asynctask class to download the photos searched via the ImageSearchTask.
+ */
 public class ImageFetchTask extends AsyncTask<List<String>,Integer,HashMap<String,DownloadedImages>> {
     private ProgressDialog progressDialog;
-    private Context context;
-    private CallBack mCallBack;
+    private final Context context;
+    private final CallBack mCallBack;
     private HashMap<String,DownloadedImages> downloadedImagesHashMap=new HashMap<>();
 
     public ImageFetchTask(Context cxt, CallBack callBack)
@@ -50,7 +53,7 @@ public class ImageFetchTask extends AsyncTask<List<String>,Integer,HashMap<Strin
         int totalNumberOfPhotos;
         try {
             List<String> photoIds = lists[0];
-            String photoSizesResult = "", url = "";
+            String photoSizesResult = "", url;
             totalNumberOfPhotos = DataManager.getInstance().getReceivedPhotos().getReceivedPhoto().getPhotos().size();
             for (int i = 0; i < photoIds.size(); i++) {
 
@@ -80,6 +83,8 @@ public class ImageFetchTask extends AsyncTask<List<String>,Integer,HashMap<Strin
                 Bitmap bitmapThumbnail = BitmapFactory.decodeStream(inputStreamThumbnail);
                 Bitmap bitmapMedium = BitmapFactory.decodeStream(inputStreamMedium);
 
+                inputStreamThumbnail.close();
+                inputStreamMedium.close();
                 publishProgress(DataManager.startIndex+i, totalNumberOfPhotos);
                 downloadedImage = new DownloadedImages();
                 downloadedImage.setImage(new DownloadedImages.ImageDetails(currentPhotoId, bitmapThumbnail, bitmapMedium));
@@ -97,9 +102,10 @@ public class ImageFetchTask extends AsyncTask<List<String>,Integer,HashMap<Strin
         super.onPostExecute(imagesHashMap);
         progressDialog.dismiss();
         mCallBack.onSuccess(imagesHashMap);
+        System.gc();
     }
     public interface CallBack{
-        public void onSuccess(HashMap<String,DownloadedImages> downloadedImagesList);
-        public void onFailure(String errorMsg);
+        void onSuccess(HashMap<String, DownloadedImages> downloadedImagesList);
+        void onFailure(String errorMsg);
     }
 }
