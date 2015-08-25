@@ -77,13 +77,20 @@ public class DataManager {
             Log.v(Constants.LOG_TAG, "Number of Photos Downloaded : " + imagesHashMap.size());
             numberOfPhotosRemaining=numberOfPhotosSearched-downloadedImagesHashMap.size();
             Log.v(Constants.LOG_TAG,"Number of Photos Remaining : " +numberOfPhotosRemaining);
-            if(numberOfPhotosRemaining>0) downloadAllImages();
             MainActivity.refreshData();
         }
 
         @Override
         public void onFailure(String errorMsg) {
         }
+    }
+
+    public void loadNext()
+    {
+        numberOfPhotosRemaining=numberOfPhotosSearched-downloadedImagesHashMap.size();
+        Log.v(Constants.LOG_TAG,"Number of Photos Remaining : " +numberOfPhotosRemaining);
+        if(numberOfPhotosRemaining>0) downloadAllImages();
+        MainActivity.refreshData();
     }
 
     public ResponsePhotos getReceivedPhotos() {

@@ -102,7 +102,6 @@ public class ImageFetchTask extends AsyncTask<List<String>,Integer,HashMap<Strin
         super.onPostExecute(imagesHashMap);
         progressDialog.dismiss();
         mCallBack.onSuccess(imagesHashMap);
-        System.gc();
     }
     public interface CallBack{
         void onSuccess(HashMap<String, DownloadedImages> downloadedImagesList);

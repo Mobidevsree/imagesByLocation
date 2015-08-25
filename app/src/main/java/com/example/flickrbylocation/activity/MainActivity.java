@@ -16,6 +16,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 import android.widget.GridView;
 import android.widget.Toast;
 
@@ -50,6 +52,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         GridView imageGridView = (GridView) findViewById(R.id.imageGridView);
         imageGridViewAdapter = new ImageGridViewAdapter(context);
         imageGridView.setAdapter(imageGridViewAdapter);
+
+        Button nextButton=(Button)findViewById(R.id.nextButton);
+        nextButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                DataManager.getInstance().loadNext();
+            }
+        });
     }
 
     /**

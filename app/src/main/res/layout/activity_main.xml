@@ -2,17 +2,27 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:weightSum="1">
 
     <GridView
         android:id="@+id/imageGridView"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_height="0dp"
         android:gravity="center"
         android:numColumns="auto_fit"
         android:columnWidth="90dp"
         android:horizontalSpacing="5dp"
         android:verticalSpacing="5dp"
-        android:stretchMode="columnWidth" />
+        android:stretchMode="columnWidth"
+        android:layout_weight="0.9"/>
+
+    <Button
+        android:layout_width="fill_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="bottom"
+        android:id="@+id/nextButton"
+        android:text="@string/nextBtnText"
+        android:layout_weight="0.1"/>
 </LinearLayout>
 
