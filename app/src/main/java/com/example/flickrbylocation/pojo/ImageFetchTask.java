@@ -83,8 +83,6 @@ public class ImageFetchTask extends AsyncTask<List<String>,Integer,HashMap<Strin
                 Bitmap bitmapThumbnail = BitmapFactory.decodeStream(inputStreamThumbnail);
                 Bitmap bitmapMedium = BitmapFactory.decodeStream(inputStreamMedium);
 
-                inputStreamThumbnail.close();
-                inputStreamMedium.close();
                 publishProgress(DataManager.startIndex+i, totalNumberOfPhotos);
                 downloadedImage = new DownloadedImages();
                 downloadedImage.setImage(new DownloadedImages.ImageDetails(currentPhotoId, bitmapThumbnail, bitmapMedium));
