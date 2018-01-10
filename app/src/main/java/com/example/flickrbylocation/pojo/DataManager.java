@@ -17,32 +17,32 @@ import java.util.List;
 public class DataManager {
 
     private static DataManager instance;
-    private double latitude,longitude;
+    private double latitude, longitude;
     private Context context;
-    private ResponsePhotos receivedPhotos=new ResponsePhotos();
-    private HashMap<String,DownloadedImages> downloadedImagesHashMap=new HashMap<>();
+    private ResponsePhotos receivedPhotos = new ResponsePhotos();
+    private HashMap<String, DownloadedImages> downloadedImagesHashMap = new HashMap<>();
     private static int numberOfPhotosRemaining;
     private static int numberOfPhotosSearched;
     static int startIndex;
     private static int endIndex;
     private static int counter;
 
-    private DataManager() {  }
+    private DataManager() {
+    }
 
-    public static DataManager getInstance(){
-        if(instance == null){
+    public static DataManager getInstance() {
+        if (instance == null) {
             instance = new DataManager();
         }
         return instance;
     }
 
-    public void setDeviceCoordinates(Context ctx,double receivedLatitude, double receivedLongitude)
-    {
-        context=ctx;
-        if((receivedLatitude-latitude)>1 ||(latitude-receivedLatitude>1)||(receivedLongitude-longitude)>1 ||(longitude-receivedLongitude)>1) {
+    public void setDeviceCoordinates(Context ctx, double receivedLatitude, double receivedLongitude) {
+        context = ctx;
+        if ((receivedLatitude - latitude) > 1 || (latitude - receivedLatitude > 1) || (receivedLongitude - longitude) > 1 || (longitude - receivedLongitude) > 1) {
             latitude = receivedLatitude;
             longitude = receivedLongitude;
-            Log.v(Constants.LOG_TAG,"Latitude : "+latitude +" Longitude : "+longitude);
+            Log.v(Constants.LOG_TAG, "Latitude : " + latitude + " Longitude : " + longitude);
             ImageSearchCallBack callBack = new ImageSearchCallBack();
             new ImageSearchTask(context, callBack).execute(String.valueOf(latitude), String.valueOf(longitude));
         }
@@ -56,7 +56,7 @@ public class DataManager {
         @Override
         public void onSuccess(ResponsePhotos receivedPhotos) {
             setReceivedPhotos(receivedPhotos);
-            Log.v(Constants.LOG_TAG,"Received Photos Size : "+receivedPhotos.getReceivedPhoto().getPhotos().size());
+            Log.v(Constants.LOG_TAG, "Received Photos Size : " + receivedPhotos.getReceivedPhoto().getPhotos().size());
             initDownloadNumbers();
             downloadAllImages();
         }
@@ -75,8 +75,8 @@ public class DataManager {
         public void onSuccess(HashMap<String, DownloadedImages> imagesHashMap) {
             updateDownloadedImagesHashMap(imagesHashMap);
             Log.v(Constants.LOG_TAG, "Number of Photos Downloaded : " + imagesHashMap.size());
-            numberOfPhotosRemaining=numberOfPhotosSearched-downloadedImagesHashMap.size();
-            Log.v(Constants.LOG_TAG,"Number of Photos Remaining : " +numberOfPhotosRemaining);
+            numberOfPhotosRemaining = numberOfPhotosSearched - downloadedImagesHashMap.size();
+            Log.v(Constants.LOG_TAG, "Number of Photos Remaining : " + numberOfPhotosRemaining);
             MainActivity.refreshData();
         }
 
@@ -85,11 +85,10 @@ public class DataManager {
         }
     }
 
-    public void loadNext()
-    {
-        numberOfPhotosRemaining=numberOfPhotosSearched-downloadedImagesHashMap.size();
-        Log.v(Constants.LOG_TAG,"Number of Photos Remaining : " +numberOfPhotosRemaining);
-        if(numberOfPhotosRemaining>0) downloadAllImages();
+    public void loadNext() {
+        numberOfPhotosRemaining = numberOfPhotosSearched - downloadedImagesHashMap.size();
+        Log.v(Constants.LOG_TAG, "Number of Photos Remaining : " + numberOfPhotosRemaining);
+        if (numberOfPhotosRemaining > 0) downloadAllImages();
         MainActivity.refreshData();
     }
 
@@ -149,6 +148,6 @@ public class DataManager {
 
     private void startFetchTask(List<String> photoIds) {
         ImageFetchCallBack callBack = new ImageFetchCallBack();
-        new ImageFetchTask(context, callBack).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,photoIds);
+        new ImageFetchTask(context, callBack).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, photoIds);
     }
 }

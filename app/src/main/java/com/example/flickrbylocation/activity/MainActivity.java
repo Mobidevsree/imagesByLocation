@@ -1,16 +1,22 @@
 package com.example.flickrbylocation.activity;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
@@ -24,6 +30,8 @@ import android.widget.Toast;
 import com.example.flickrbylocation.R;
 import com.example.flickrbylocation.adapter.ImageGridViewAdapter;
 import com.example.flickrbylocation.pojo.DataManager;
+
+import java.security.Permission;
 
 /**
  * Activity to display the Flickr images searched based on the current Location.
@@ -42,7 +50,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         setContentView(R.layout.activity_main);
         context = this;
 
-        ActionBar actionBar=getSupportActionBar();
+        ActionBar actionBar = getSupportActionBar();
         actionBar.setTitle(R.string.app_name);
         //Verify the Connection Settings
         verifyConnectivitySettings();
@@ -53,7 +61,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         imageGridViewAdapter = new ImageGridViewAdapter(context);
         imageGridView.setAdapter(imageGridViewAdapter);
 
-        Button nextButton=(Button)findViewById(R.id.nextButton);
+        Button nextButton = (Button) findViewById(R.id.nextButton);
         nextButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -88,11 +96,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
         return true;
     }
+
     @Override
-    public void onResume()
-    {
+    public void onResume() {
         super.onResume();
-        if(DataManager.getInstance().getDownloadedImagesHashMap().size()==0) getCurrentLocation();
+        if (DataManager.getInstance().getDownloadedImagesHashMap().size() == 0)
+            getCurrentLocation();
     }
 
     private void verifyConnectivitySettings() {
@@ -120,6 +129,20 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             dialog.show();
         }
     }
+
+    ActivityCompat.OnRequestPermissionsResultCallback callback = new ActivityCompat.OnRequestPermissionsResultCallback() {
+        @Override
+        public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+            if (requestCode == 490) {
+                boolean permissionGranted = false;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    permissionGranted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                }
+                if (permissionGranted)
+                    getCurrentLocation();
+            }
+        }
+    };
 
     /**
      * Verify if the Network Provider or GPS Provider is enabled. If both are disabled, prompt the user to enable the
@@ -160,20 +183,26 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 });
                 dialog.show();
             } else {
-                //Get location from Network Provider
-                if (isNetworkEnabled) {
-                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
+                boolean permissionGranted = false;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    permissionGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                }
+                if (!permissionGranted)
+                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 490);
+                else {
+                    //Get location from Network Provider
+                    if (isNetworkEnabled) {
+                        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
                         location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
                         if (location != null) {
                             currentDeviceLatitude = location.getLatitude();
                             currentDeviceLongitude = location.getLongitude();
                             DataManager.getInstance().setDeviceCoordinates(context, currentDeviceLatitude, currentDeviceLongitude);
-
+                        }
                     }
-                }
-                // if GPS Enabled get lat/long using GPS Services
-                if (isGPSEnabled) {
-                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+                    // if GPS Enabled get lat/long using GPS Services
+                    if (isGPSEnabled) {
+                        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
                         location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                         if (location != null) {
                             currentDeviceLatitude = location.getLatitude();
@@ -181,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                             DataManager.getInstance().setDeviceCoordinates(context, currentDeviceLatitude, currentDeviceLongitude);
                         }
                     }
-
+                }
             }
 
         } catch (Exception e) {
