@@ -1,5 +1,6 @@
 package com.example.flickrbylocation.adapter;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -19,10 +20,10 @@ public class ImageGridViewAdapter extends BaseAdapter {
 
     private final Context context;
 
-    public ImageGridViewAdapter(Context context)
-    {
-        this.context=context;
+    public ImageGridViewAdapter(Context context) {
+        this.context = context;
     }
+
     @Override
     public int getCount() {
         return DataManager.getInstance().getDownloadedImagesHashMap().size();
@@ -30,7 +31,7 @@ public class ImageGridViewAdapter extends BaseAdapter {
 
     @Override
     public Object getItem(int position) {
-        String photoId= DataManager.getInstance().getReceivedPhotos().getReceivedPhoto().getPhotos().get(position).getId();
+        String photoId = DataManager.getInstance().getReceivedPhotos().getReceivedPhoto().getPhotos().get(position).getId();
         return DataManager.getInstance().getDownloadedImagesHashMap().get(photoId);
     }
 
@@ -43,12 +44,12 @@ public class ImageGridViewAdapter extends BaseAdapter {
     public View getView(final int position, final View convertView, ViewGroup parent) {
         ImageView imageView;
         if (convertView == null)
-            imageView=new ImageView(context);
+            imageView = new ImageView(context);
         else
             imageView = (ImageView) convertView;
 
-        final String photoId= DataManager.getInstance().getReceivedPhotos().getReceivedPhoto().getPhotos().get(position).getId();
-        Bitmap imageBitmap= DataManager.getInstance().getDownloadedImagesHashMap().get(photoId).getImage().getThumbnailBitmap();
+        final String photoId = DataManager.getInstance().getReceivedPhotos().getReceivedPhoto().getPhotos().get(position).getId();
+        Bitmap imageBitmap = DataManager.getInstance().getDownloadedImagesHashMap().get(photoId).getImage().getThumbnailBitmap();
 
         imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
         imageView.setImageBitmap(imageBitmap);
@@ -56,8 +57,9 @@ public class ImageGridViewAdapter extends BaseAdapter {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(context, ViewPhotoActivity.class);
-                intent.putExtra(Constants.CURRENT_PHOTO_ID,photoId);
+                intent.putExtra(Constants.CURRENT_PHOTO_ID, photoId);
                 context.startActivity(intent);
+                ((Activity) context).overridePendingTransition(android.support.v7.appcompat.R.anim.abc_fade_in, android.support.v7.appcompat.R.anim.abc_fade_out);
             }
         });
         return imageView;

@@ -16,17 +16,16 @@ import java.net.URL;
 /**
  * Asynctask class to search the list of photos available in the current location.
  */
-public class ImageSearchTask extends AsyncTask<String,Integer,ResponsePhotos> {
+public class ImageSearchTask extends AsyncTask<String, Integer, ResponsePhotos> {
 
     private ProgressDialog progressDialog;
     private final Context context;
-    private ResponsePhotos photosResponse=new ResponsePhotos();
+    private ResponsePhotos photosResponse = new ResponsePhotos();
     private final CallBack mCallBack;
 
-    public ImageSearchTask(Context cxt, CallBack callBack)
-    {
-        context=cxt;
-        mCallBack=callBack;
+    public ImageSearchTask(Context cxt, CallBack callBack) {
+        context = cxt;
+        mCallBack = callBack;
     }
 
     @Override
@@ -41,7 +40,7 @@ public class ImageSearchTask extends AsyncTask<String,Integer,ResponsePhotos> {
     protected ResponsePhotos doInBackground(String... params) {
 
         try {
-            String photosResult = "",url;
+            String photosResult = "", url;
             url = String.format(FlickrURL.flickr_search_getPhotos, Constants.API_KEY, params[0], params[1]);
             HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 
@@ -50,17 +49,16 @@ public class ImageSearchTask extends AsyncTask<String,Integer,ResponsePhotos> {
                 photosResult = Utility.convertInputStreamToString(connection.getInputStream());
             }
             connection.disconnect();
-            ObjectMapper mapper=new ObjectMapper();
+            ObjectMapper mapper = new ObjectMapper();
             mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
             photosResult = photosResult.replace("jsonFlickrApi(", "").replace(")", "");
             photosResponse = mapper.readValue(photosResult, ResponsePhotos.class);
-        }
-        catch(Exception e)
-        {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return photosResponse;
     }
+
     @Override
     protected void onPostExecute(ResponsePhotos photosResponse) {
         super.onPostExecute(photosResponse);
@@ -68,8 +66,9 @@ public class ImageSearchTask extends AsyncTask<String,Integer,ResponsePhotos> {
         mCallBack.onSuccess(photosResponse);
     }
 
-    public interface CallBack{
+    public interface CallBack {
         void onSuccess(ResponsePhotos receivedPhotos);
+
         void onFailure(String errorMsg);
     }
 }

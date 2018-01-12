@@ -7,7 +7,7 @@
     <ImageView
         android:id="@+id/viewPhoto"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="match_parent"
         android:layout_weight="0.9"/>
 
     <Button
@@ -16,6 +16,7 @@
         android:id="@+id/animateButton"
         android:layout_gravity="bottom"
         android:text="@string/animateBtnText"
+        android:visibility="gone"
         android:layout_weight="0.1"/>
 
 </LinearLayout>

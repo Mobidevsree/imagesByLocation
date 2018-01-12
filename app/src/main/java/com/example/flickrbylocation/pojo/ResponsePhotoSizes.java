@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
- *  Response class to map the individual Searched Photo details.
+ * Response class to map the individual Searched Photo details.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ResponsePhotoSizes {
@@ -116,6 +116,7 @@ public class ResponsePhotoSizes {
             this.sizes = sizes;
         }
     }
+
     @JsonProperty("sizes")
     private Sizes receivedPhotoSize;
 

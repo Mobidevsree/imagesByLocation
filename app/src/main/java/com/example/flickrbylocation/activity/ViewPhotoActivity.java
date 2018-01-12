@@ -24,15 +24,15 @@ public class ViewPhotoActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_view_photo);
 
-        ActionBar actionBar=getSupportActionBar();
+        ActionBar actionBar = getSupportActionBar();
         actionBar.setTitle(R.string.selected_Image);
         actionBar.setDisplayHomeAsUpEnabled(true);
         actionBar.setHomeButtonEnabled(true);
-        final ImageView selectedImage= (ImageView) findViewById(R.id.viewPhoto);
-        Button animateButton=(Button) findViewById(R.id.animateButton);
+        final ImageView selectedImage = (ImageView) findViewById(R.id.viewPhoto);
+        Button animateButton = (Button) findViewById(R.id.animateButton);
 
         // Get the photoId sent via Intent and display the Medium sized Bitmap
-        String currentPhotoId=getIntent().getExtras().getString(Constants.CURRENT_PHOTO_ID);
+        String currentPhotoId = getIntent().getExtras().getString(Constants.CURRENT_PHOTO_ID);
         selectedImage.setImageBitmap(DataManager.getInstance().getDownloadedImagesHashMap().get(currentPhotoId).getImage().getMediumBitmap());
 
         //Apply the animation on the displayed image
@@ -44,6 +44,7 @@ public class ViewPhotoActivity extends AppCompatActivity {
             }
         });
     }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {

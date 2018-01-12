@@ -21,16 +21,15 @@ import java.util.List;
 /**
  * Asynctask class to download the photos searched via the ImageSearchTask.
  */
-public class ImageFetchTask extends AsyncTask<List<String>,Integer,HashMap<String,DownloadedImages>> {
+public class ImageFetchTask extends AsyncTask<List<String>, Integer, HashMap<String, DownloadedImages>> {
     private ProgressDialog progressDialog;
     private final Context context;
     private final CallBack mCallBack;
-    private HashMap<String,DownloadedImages> downloadedImagesHashMap=new HashMap<>();
+    private HashMap<String, DownloadedImages> downloadedImagesHashMap = new HashMap<>();
 
-    public ImageFetchTask(Context cxt, CallBack callBack)
-    {
-        context=cxt;
-        mCallBack=callBack;
+    public ImageFetchTask(Context cxt, CallBack callBack) {
+        context = cxt;
+        mCallBack = callBack;
     }
 
     @Override
@@ -74,7 +73,7 @@ public class ImageFetchTask extends AsyncTask<List<String>,Integer,HashMap<Strin
                 ResponsePhotoSizes photoSizeResponse = mapper.readValue(photoSizesResult, ResponsePhotoSizes.class);
                 List<ResponsePhotoSizes.Sizes.Size> photoSizes = photoSizeResponse.getReceivedPhotoSize().getSizes();
 
-                String thumbnailURL = photoSizes.get(2).getSource();
+                String thumbnailURL = photoSizes.get(1).getSource();
                 String mediumURL = photoSizes.get(5).getSource();
 
                 InputStream inputStreamThumbnail = null, inputStreamMedium = null;
@@ -83,26 +82,27 @@ public class ImageFetchTask extends AsyncTask<List<String>,Integer,HashMap<Strin
                 Bitmap bitmapThumbnail = BitmapFactory.decodeStream(inputStreamThumbnail);
                 Bitmap bitmapMedium = BitmapFactory.decodeStream(inputStreamMedium);
 
-                publishProgress(DataManager.startIndex+i, totalNumberOfPhotos);
+                publishProgress(DataManager.startIndex + i, totalNumberOfPhotos);
                 downloadedImage = new DownloadedImages();
                 downloadedImage.setImage(new DownloadedImages.ImageDetails(currentPhotoId, bitmapThumbnail, bitmapMedium));
                 downloadedImagesHashMap.put(currentPhotoId, downloadedImage);
             }
-        }
-        catch(Exception e)
-        {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return downloadedImagesHashMap;
     }
+
     @Override
-    protected void onPostExecute(HashMap<String,DownloadedImages> imagesHashMap) {
+    protected void onPostExecute(HashMap<String, DownloadedImages> imagesHashMap) {
         super.onPostExecute(imagesHashMap);
         progressDialog.dismiss();
         mCallBack.onSuccess(imagesHashMap);
     }
-    public interface CallBack{
+
+    public interface CallBack {
         void onSuccess(HashMap<String, DownloadedImages> downloadedImagesList);
+
         void onFailure(String errorMsg);
     }
 }
